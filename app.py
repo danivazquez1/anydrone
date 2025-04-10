@@ -6,13 +6,18 @@ import math
 import requests
 from firebase_admin import db as realtime_db
 from datetime import datetime, timedelta
+import json
+import os
 
 # --- Flask Setup ---
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
 # --- Firebase Init ---
-cred = credentials.Certificate("firebase_key.json")
+firebase_json = os.environ.get("FIREBASE_KEY")
+firebase_dict = json.loads(firebase_json)
+cred = credentials.Certificate(firebase_dict)
+
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://anydrone-94193-default-rtdb.europe-west1.firebasedatabase.app/'  # ✅ Reemplaza si es distinto
 })
