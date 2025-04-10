@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Contract Service{% endblock %}
+{% block content %}
+<h2>Contract Service: {{ service["service_name"] }}</h2>
+<p><b>Drone:</b> {{ service["model"] }} ({{ service["manufacturer"] }})</p>
+<p>{{ service["service_description"] }}</p>
+
+<form method="POST" class="p-4 border rounded bg-white">
+    <div class="mb-3">
+        <label>Start Date and Time</label>
+        <input type="datetime-local" name="start_time" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Duration (in hours)</label>
+        <input type="number" step="0.1" name="duration" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Notes (optional)</label>
+        <textarea name="notes" class="form-control" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Confirm Contract</button>
+</form>
+{% endblock %}

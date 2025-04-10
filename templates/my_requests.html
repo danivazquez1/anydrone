@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Service Requests Received{% endblock %}
+{% block content %}
+<h2>My Incoming Service Requests</h2>
+
+{% if requests %}
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped">
+            <thead class="table-light">
+                <tr>
+                    <th>Service</th>
+                    <th>Drone</th>
+                    <th>Client</th>
+                    <th>Start Time</th>
+                    <th>Duration (h)</th>
+                    <th>Notes</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                <tr>
+                    <td>{{ r["service_name"] }}</td>
+                    <td>{{ r["drone_model"] }}</td>
+                    <td>{{ r["client_name"] }}</td>
+                    <td>{{ r["start_time"] }}</td>
+                    <td>{{ r["duration_hours"] }}</td>
+                    <td>{{ r["notes"] or '' }}</td>
+                    <td>
+                        {% if r["status"] == 'pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% elif r["status"] == 'confirmed' %}
+                            <span class="badge bg-success">Confirmed</span>
+                        {% elif r["status"] == 'cancelled' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r["status"] == 'pending' %}
+                            <a href="{{ url_for('approve_request', contract_id=r['contract_id']) }}" class="btn btn-sm btn-success me-2">Approve</a>
+                            <a href="{{ url_for('reject_request', contract_id=r['contract_id']) }}" class="btn btn-sm btn-outline-danger">Reject</a>
+                        {% else %}
+                            <span class="text-muted">No action</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info mt-4">No incoming requests at the moment.</div>
+{% endif %}
+{% endblock %}

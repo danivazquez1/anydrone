@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: anydrone
+    env: python
+    buildCommand: ""
+    startCommand: python app.py
+    plan: free
+    envVars:
+      - key: FIREBASE_KEY
+        value: $FIREBASE_KEY

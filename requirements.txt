@@ -1,0 +1,4 @@
+Flask==2.2.2
+firebase-admin==6.2.0
+Werkzeug==2.2.2
+requests==2.31.0

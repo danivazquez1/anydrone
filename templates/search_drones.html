@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Search Drones{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Search Drones by Location</h2>
+
+<form method="POST" class="row g-3 mb-4 p-3 bg-white border rounded shadow-sm">
+    <div class="col-md-8">
+        <label for="place_name" class="form-label">Search by Location Name</label>
+        <input type="text" name="place_name" id="place_name" class="form-control" placeholder="e.g. Madrid, Spain" required>
+    </div>
+    <div class="col-md-4">
+        <label for="radius" class="form-label">Radius (km)</label>
+        <input type="number" step="0.1" name="radius" id="radius" class="form-control" required>
+    </div>
+    <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary mt-2">Search</button>
+    </div>
+</form>
+
+{% if drones %}
+    <div class="row">
+        {% for drone in drones %}
+            <div class="col-md-4">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ drone["model"] }}</h5>
+                        <p class="card-text">Manufacturer: {{ drone["manufacturer"] }}</p>
+                        <p class="card-text">Camera: {{ drone["camera_quality"] }}</p>
+                        <p class="card-text">Max Load: {{ drone["max_load"] }} kg</p>
+                        <p class="card-text">Flight Time: {{ drone["flight_time"] }} min</p>
+                        <p class="card-text"><small>Location: {{ drone["latitude"] }}, {{ drone["longitude"] }}</small></p>
+
+                        {% if drone["services"] %}
+                            <hr>
+                            <h6>Services:</h6>
+                            <ul class="list-unstyled">
+                                {% for service in drone["services"] %}
+                                    <li class="mb-2">
+                                        <b>{{ service["name"] }}</b><br>
+                                        {{ service["description"] or "No description" }}<br>
+                                        <span class="badge {{ 'bg-success' if service["is_available"] else 'bg-secondary' }}">
+                                            {{ 'Available' if service["is_available"] else 'Unavailable' }}
+                                        </span>
+                                        <span class="ms-2">Base Price: {{ service["price"] }} €/hour</span>
+
+                                        {% if service["is_available"] %}
+                                            <div class="mt-2">
+                                                <a href="{{ url_for('contract_service', service_id=service['service_id']) }}"
+                                                   class="btn btn-outline-success btn-sm">
+                                                    Contract
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="alert alert-warning mt-3">No services associated with this drone.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% elif drones is not none %}
+    <div class="alert alert-info mt-4">No drones found in this area.</div>
+{% endif %}
+{% endblock %}

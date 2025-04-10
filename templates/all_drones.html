@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}All Drones and Services{% endblock %}
+{% block content %}
+<h2>All Drones and Their Services</h2>
+
+<div class="row">
+    {% for drone_id, drone in drones.items() %}
+        <div class="col-md-4">
+            <div class="card mb-4 shadow">
+                <div class="card-body">
+                    <h5 class="card-title">{{ drone["model"] }}</h5>
+                    <p class="card-text">Manufacturer: {{ drone["manufacturer"] }}</p>
+                    <p class="card-text">Camera: {{ drone["camera_quality"] }}</p>
+                    <p class="card-text">Max Load: {{ drone["max_load"] }} kg</p>
+                    <p class="card-text">Flight Time: {{ drone["flight_time"] }} min</p>
+
+                    {% if drone["services"] %}
+                        <hr>
+                        <h6>Services:</h6>
+                        <ul class="list-unstyled">
+                            {% for service in drone["services"] %}
+                                <li class="mb-2">
+                                    <b>{{ service["name"] }}</b><br>
+                                    {{ service["description"] or "No description" }}<br>
+                                    <span class="badge {{ 'bg-success' if service["is_available"] else 'bg-secondary' }}">
+                                        {{ 'Available' if service["is_available"] else 'Unavailable' }}
+                                    </span>
+                                    <span class="ms-2">Base Price: {{ service["price"] }} €/hour</span>
+
+                                    {% if service["is_available"] %}
+                                        <div class="mt-2">
+                                            <a href="{{ url_for('contract_service', service_id=service['service_id']) }}"
+                                               class="btn btn-outline-success btn-sm">
+                                                Contract
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-warning mt-3">No services associated with this drone.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

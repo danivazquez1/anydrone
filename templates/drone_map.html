@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Drone Map{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Available Drones on Map</h2>
+<div id="map" style="height: 600px;"></div>
+
+<!-- Leaflet Styles and Scripts -->
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const map = L.map('map').setView([42.24, -8.72], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    const droneData = {{ drones | tojson | safe }};
+
+    droneData.forEach(drone => {
+        if (!drone.latitude || !drone.longitude) return;
+
+        const marker = L.marker([drone.latitude, drone.longitude]).addTo(map);
+        let popup = `<strong>${drone.model}</strong><br>`;
+        popup += `Manufacturer: ${drone.manufacturer}<br>`;
+
+        if (drone.services && drone.services.length > 0) {
+            popup += `<hr><b>Services:</b><ul>`;
+            drone.services.forEach(service => {
+                popup += `<li>${service.name} - €${service.price}/h`;
+                if (service.is_available) {
+                    popup += ` <a href="/contract/${service.service_id}" class="btn btn-sm btn-success ms-1">Contract</a>`;
+                } else {
+                    popup += ` <span class="text-muted">(Unavailable)</span>`;
+                }
+                popup += `</li>`;
+            });
+            popup += `</ul>`;
+        } else {
+            popup += `<i>No services available</i>`;
+        }
+
+        marker.bindPopup(popup);
+    });
+</script>
+{% endblock %}
