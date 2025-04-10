@@ -19,7 +19,7 @@ firebase_dict = json.loads(firebase_json)
 cred = credentials.Certificate(firebase_dict)
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://anydrone-94193-default-rtdb.europe-west1.firebasedatabase.app/'  # ✅ Reemplaza si es distinto
+    'databaseURL': 'https://anydrone-94193-default-rtdb.europe-west1.firebasedatabase.app/' 
 })
 db = firestore.client()
 
@@ -504,4 +504,5 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
