@@ -5,6 +5,17 @@
 <h2 class="mb-4">Available Drones on Map</h2>
 <div id="map" style="height: 600px;"></div>
 
+<!-- Legend -->
+<div class="mt-4">
+    <h6>Legend:</h6>
+    <ul class="list-unstyled small">
+        <li><span style="color:#28a745">●</span> border + <span style="color:#007bff">●</span> fill = Found via Script & Available</li>
+        <li><span style="color:#dc3545">●</span> border + <span style="color:#007bff">●</span> fill = Found via Script & Not Available</li>
+        <li><span style="color:#28a745">●</span> border + <span style="color:#ffc107">●</span> fill = Database & Available</li>
+        <li><span style="color:#dc3545">●</span> border + <span style="color:#ffc107">●</span> fill = Database & Not Available</li>
+    </ul>
+</div>
+
 <!-- Leaflet Styles and Scripts -->
 <link
     rel="stylesheet"
@@ -21,10 +32,40 @@
 
     const droneData = {{ drones | tojson | safe }};
 
+    // Color mapping logic
+    const colorMap = {
+        greenblue: { color: "#28a745", fillColor: "#007bff" },     // Script & Available
+        redblue: { color: "#dc3545", fillColor: "#007bff" },       // Script & Not Available
+        greenyellow: { color: "#28a745", fillColor: "#ffc107" },   // DB & Available
+        redyellow: { color: "#dc3545", fillColor: "#ffc107" }      // DB & Not Available
+    };
+
     droneData.forEach(drone => {
         if (!drone.latitude || !drone.longitude) return;
 
-        const marker = L.marker([drone.latitude, drone.longitude]).addTo(map);
+        const isScript = drone.owner_id === "local_user";
+        const isAvailable = drone.services.some(s => s.is_available);
+        let markerColor;
+
+        if (isScript && isAvailable) {
+            markerColor = "greenblue";
+        } else if (isScript && !isAvailable) {
+            markerColor = "redblue";
+        } else if (!isScript && isAvailable) {
+            markerColor = "greenyellow";
+        } else {
+            markerColor = "redyellow";
+        }
+
+        const marker = L.circleMarker([drone.latitude, drone.longitude], {
+            radius: 10,
+            color: colorMap[markerColor].color,
+            fillColor: colorMap[markerColor].fillColor,
+            fillOpacity: 0.8,
+            weight: 2
+        }).addTo(map);
+
+        // Popup content
         let popup = `<strong>${drone.model}</strong><br>`;
         popup += `Manufacturer: ${drone.manufacturer}<br>`;
 
