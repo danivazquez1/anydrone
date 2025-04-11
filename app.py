@@ -53,15 +53,20 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        password = request.form["password"]
-        hashed_password = generate_password_hash(password)
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form["password"].strip()
+
+        if not name or not email or not password:
+            flash("All fields are required.", "warning")
+            return render_template("register.html", name=name, email=email)
 
         existing = list(db.collection("users").where("user_email_address", "==", email).stream())
         if existing:
             flash("Email already registered.", "warning")
-            return redirect(url_for("register"))
+            return render_template("register.html", name=name, email=email)
+
+        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
 
         user_ref = db.collection("users").add({
             "user_name": name,
@@ -69,14 +74,17 @@ def register():
             "user_password": hashed_password
         })
         user_id = user_ref[1].id
+
         update_realtime_db(f"users/{user_id}", {
             "user_name": name,
             "user_email_address": email
         })
 
+        flash("Registration successful. Please log in.", "success")
         return redirect(url_for("login"))
 
     return render_template("register.html")
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -86,15 +94,20 @@ def login():
         password = request.form["password"]
 
         users = list(db.collection("users").where("user_email_address", "==", email).stream())
-        if users and check_password_hash(users[0].to_dict()["user_password"], password):
-            user = users[0]
-            session["user_id"] = user.id
-            session["name"] = user.to_dict()["user_name"]
-            return redirect(url_for("dashboard"))
-        else:
-            flash("Invalid credentials", "danger")
+
+        if users:
+            user_data = users[0].to_dict()
+            if check_password_hash(user_data["user_password"], password):
+                session["user_id"] = users[0].id
+                session["name"] = user_data["user_name"]
+                return redirect(url_for("dashboard"))
+
+        # Si llega aquí, hubo error
+        flash("Invalid credentials", "danger")
+        return render_template("login.html")
 
     return render_template("login.html")
+
 
 
 @app.route("/dashboard")
