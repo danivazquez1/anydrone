@@ -1,33 +1,50 @@
-/* style.css */
+/* style.css - Enhanced */
 
-/* general layout */
+/* General Layout */
 body {
     background-color: #f8f9fa;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #2c3e50;
 }
 
-h2 {
+/* Headings */
+h1, h2, h3 {
     font-weight: 600;
     color: #2c3e50;
 }
 
+h2 {
+    margin-bottom: 1rem;
+}
+
+/* Cards */
 .card {
     border: none;
     border-radius: 0.75rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out;
 }
 
-.card-title {
-    font-weight: 500;
-    color: #34495e;
+.card:hover {
+    transform: scale(1.02);
 }
 
+/* Buttons */
 .btn {
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+    font-weight: 500;
 }
 
 .btn-primary {
     background-color: #0056b3;
     border-color: #0056b3;
+}
+
+.btn-primary:hover {
+    background-color: #003d80;
+    border-color: #003d80;
 }
 
 .btn-outline-primary {
@@ -45,29 +62,49 @@ h2 {
     border-color: rgba(255, 255, 255, 0.7);
 }
 
+.btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Navigation */
+.navbar {
+    padding: 1rem;
+}
+
 .navbar-brand {
     font-weight: bold;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
 }
 
-.alert {
-    font-size: 0.95rem;
+.navbar .btn {
+    margin-left: 0.5rem;
 }
 
-.table {
-    font-size: 0.95rem;
-}
-
+/* Forms */
 .form-control,
 .form-select {
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
+    box-shadow: none;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
+.form-control:focus,
+.form-select:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 0 0.2rem rgba(0, 86, 179, 0.25);
+}
+
+/* Inputs */
 input[type="datetime-local"] {
     min-width: 100%;
 }
 
-/* flash message categories */
+/* Alerts */
+.alert {
+    font-size: 0.95rem;
+    border-radius: 0.5rem;
+}
+
 .alert-success {
     background-color: #d4edda;
     color: #155724;
@@ -88,7 +125,24 @@ input[type="datetime-local"] {
     color: #0c5460;
 }
 
-/* table borders more subtle */
+/* Tables */
+.table {
+    font-size: 0.95rem;
+}
+
+.table thead th {
+    background-color: #f1f1f1;
+}
+
 .table-bordered td, .table-bordered th {
     border-color: #dee2e6;
+}
+
+/* Misc */
+.shadow-sm:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.text-muted {
+    color: #6c757d !important;
 }
