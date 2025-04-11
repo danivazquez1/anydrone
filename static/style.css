@@ -146,3 +146,35 @@ input[type="datetime-local"] {
 .text-muted {
     color: #6c757d !important;
 }
+
+
+@media (max-width: 576px) {
+    h1, h2 {
+        font-size: 1.4rem;
+        text-align: center;
+    }
+
+    .btn {
+        font-size: 0.95rem;
+        padding: 0.6rem 1rem;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .form-control {
+        font-size: 0.95rem;
+    }
+
+    .navbar .btn,
+    .navbar .nav-link {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
