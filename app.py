@@ -8,6 +8,7 @@ from firebase_admin import db as realtime_db
 from datetime import datetime, timedelta
 import json
 import os
+import random
 
 # --- Flask Setup ---
 app = Flask(__name__)
@@ -509,18 +510,47 @@ def access_service(contract_id):
     return redirect(stream_url)
 
 
+# @app.route("/api/drones")
+# def api_drones():
+#     drone_data = []
+#     drones = db.collection("drones").stream()
+#     for d in drones:
+#         drone = d.to_dict()
+#         if drone.get("latitude") is not None and drone.get("longitude") is not None:
+#             services = db.collection("services").where("drone_id", "==", d.id).stream()
+#             drone["services"] = [s.to_dict() | {"service_id": s.id} for s in services]
+#             drone["drone_id"] = d.id
+#             drone_data.append(drone)
+#     return jsonify(drone_data)
+
 @app.route("/api/drones")
 def api_drones():
-    drone_data = []
-    drones = db.collection("drones").stream()
-    for d in drones:
-        drone = d.to_dict()
-        if drone.get("latitude") is not None and drone.get("longitude") is not None:
-            services = db.collection("services").where("drone_id", "==", d.id).stream()
-            drone["services"] = [s.to_dict() | {"service_id": s.id} for s in services]
-            drone["drone_id"] = d.id
-            drone_data.append(drone)
-    return jsonify(drone_data)
+    # Simular movimiento aleatorio
+    lat = 42.24 + random.uniform(-0.0015, 0.0015)
+    lon = -8.72 + random.uniform(-0.0015, 0.0015)
+
+    mock_data = [{
+        "drone_id": "sim_001",
+        "model": "SimuDrone X1",
+        "manufacturer": "SimCo",
+        "camera_quality": "4K",
+        "max_load": 2.0,
+        "flight_time": 25,
+        "latitude": lat,
+        "longitude": lon,
+        "owner_id": "local_user",
+        "services": [
+            {
+                "name": "Aerial Photography",
+                "description": "HD photography from above",
+                "price": 30.0,
+                "is_available": True,
+                "service_id": "srv_sim_01"
+            }
+        ]
+    }]
+    return jsonify(mock_data)
+
 
 
 
