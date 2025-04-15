@@ -9,10 +9,10 @@
 <div class="mt-4">
     <h6>Legend:</h6>
     <ul class="list-unstyled small">
-        <li><span style="color:#28a745">●</span> border + <span style="color:#007bff">●</span> fill = Found via Script & Available</li>
-        <li><span style="color:#dc3545">●</span> border + <span style="color:#007bff">●</span> fill = Found via Script & Not Available</li>
-        <li><span style="color:#28a745">●</span> border + <span style="color:#ffc107">●</span> fill = Database & Available</li>
-        <li><span style="color:#dc3545">●</span> border + <span style="color:#ffc107">●</span> fill = Database & Not Available</li>
+        <li><span style="color:#28a745">●</span> border + <span style="color:#007bff">●</span> fill = Found around you & Available</li>
+        <li><span style="color:#dc3545">●</span> border + <span style="color:#007bff">●</span> fill = Found around you & Not Available</li>
+        <li><span style="color:#28a745">●</span> border + <span style="color:#ffc107">●</span> fill = Found by other user & Available</li>
+        <li><span style="color:#dc3545">●</span> border + <span style="color:#ffc107">●</span> fill = Found by other & Not Available</li>
     </ul>
 </div>
 
@@ -30,62 +30,81 @@
         attribution: "&copy; OpenStreetMap contributors"
     }).addTo(map);
 
-    const droneData = {{ drones | tojson | safe }};
-
-    // Color mapping logic
     const colorMap = {
-        greenblue: { color: "#28a745", fillColor: "#007bff" },     // Script & Available
-        redblue: { color: "#dc3545", fillColor: "#007bff" },       // Script & Not Available
-        greenyellow: { color: "#28a745", fillColor: "#ffc107" },   // DB & Available
-        redyellow: { color: "#dc3545", fillColor: "#ffc107" }      // DB & Not Available
+        greenblue: { color: "#28a745", fillColor: "#007bff" },
+        redblue: { color: "#dc3545", fillColor: "#007bff" },
+        greenyellow: { color: "#28a745", fillColor: "#ffc107" },
+        redyellow: { color: "#dc3545", fillColor: "#ffc107" }
     };
 
-    droneData.forEach(drone => {
-        if (!drone.latitude || !drone.longitude) return;
+    const markers = {}; // Guardar marcadores por drone ID
 
-        const isScript = drone.owner_id === "local_user";
-        const isAvailable = drone.services.some(s => s.is_available);
-        let markerColor;
+    async function updateDronesOnMap() {
+        const res = await fetch("/api/drones");
+        const droneData = await res.json();
 
-        if (isScript && isAvailable) {
-            markerColor = "greenblue";
-        } else if (isScript && !isAvailable) {
-            markerColor = "redblue";
-        } else if (!isScript && isAvailable) {
-            markerColor = "greenyellow";
-        } else {
-            markerColor = "redyellow";
+        const currentDroneIds = new Set();
+
+        droneData.forEach(drone => {
+            if (!drone.latitude || !drone.longitude) return;
+
+            const droneId = drone.drone_id || drone.uas_id || (drone.model + drone.latitude);
+            currentDroneIds.add(droneId);
+
+            const isScript = drone.owner_id === "local_user";
+            const isAvailable = drone.services.some(s => s.is_available);
+            let markerColor;
+
+            if (isScript && isAvailable) markerColor = "greenblue";
+            else if (isScript && !isAvailable) markerColor = "redblue";
+            else if (!isScript && isAvailable) markerColor = "greenyellow";
+            else markerColor = "redyellow";
+
+            let popup = `<strong>${drone.model}</strong><br>`;
+            popup += `Manufacturer: ${drone.manufacturer}<br>`;
+
+            if (drone.services && drone.services.length > 0) {
+                popup += `<hr><b>Services:</b><ul>`;
+                drone.services.forEach(service => {
+                    popup += `<li>${service.name} - €${service.price}/h`;
+                    if (service.is_available) {
+                        popup += ` <a href="/contract/${service.service_id}" class="btn btn-sm btn-success ms-1">Contract</a>`;
+                    } else {
+                        popup += ` <span class="text-muted">(Unavailable)</span>`;
+                    }
+                    popup += `</li>`;
+                });
+                popup += `</ul>`;
+            } else {
+                popup += `<i>No services available</i>`;
+            }
+
+            // Si ya existe, actualiza
+            if (markers[droneId]) {
+                markers[droneId].setLatLng([drone.latitude, drone.longitude]);
+                markers[droneId].bindPopup(popup);
+            } else {
+                markers[droneId] = L.circleMarker([drone.latitude, drone.longitude], {
+                    radius: 10,
+                    color: colorMap[markerColor].color,
+                    fillColor: colorMap[markerColor].fillColor,
+                    fillOpacity: 0.8,
+                    weight: 2
+                }).addTo(map).bindPopup(popup);
+            }
+        });
+
+        // 🧹 Eliminar drones que ya no están
+        for (const droneId in markers) {
+            if (!currentDroneIds.has(droneId)) {
+                map.removeLayer(markers[droneId]);
+                delete markers[droneId];
+            }
         }
+    }
 
-        const marker = L.circleMarker([drone.latitude, drone.longitude], {
-            radius: 10,
-            color: colorMap[markerColor].color,
-            fillColor: colorMap[markerColor].fillColor,
-            fillOpacity: 0.8,
-            weight: 2
-        }).addTo(map);
-
-        // Popup content
-        let popup = `<strong>${drone.model}</strong><br>`;
-        popup += `Manufacturer: ${drone.manufacturer}<br>`;
-
-        if (drone.services && drone.services.length > 0) {
-            popup += `<hr><b>Services:</b><ul>`;
-            drone.services.forEach(service => {
-                popup += `<li>${service.name} - €${service.price}/h`;
-                if (service.is_available) {
-                    popup += ` <a href="/contract/${service.service_id}" class="btn btn-sm btn-success ms-1">Contract</a>`;
-                } else {
-                    popup += ` <span class="text-muted">(Unavailable)</span>`;
-                }
-                popup += `</li>`;
-            });
-            popup += `</ul>`;
-        } else {
-            popup += `<i>No services available</i>`;
-        }
-
-        marker.bindPopup(popup);
-    });
+    updateDronesOnMap(); // Primer llamado
+    setInterval(updateDronesOnMap, 10000); // Cada 10 segundos
 </script>
+
 {% endblock %}

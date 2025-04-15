@@ -509,6 +509,20 @@ def access_service(contract_id):
     return redirect(stream_url)
 
 
+@app.route("/api/drones")
+def api_drones():
+    drone_data = []
+    drones = db.collection("drones").stream()
+    for d in drones:
+        drone = d.to_dict()
+        if drone.get("latitude") is not None and drone.get("longitude") is not None:
+            services = db.collection("services").where("drone_id", "==", d.id).stream()
+            drone["services"] = [s.to_dict() | {"service_id": s.id} for s in services]
+            drone["drone_id"] = d.id
+            drone_data.append(drone)
+    return jsonify(drone_data)
+
+
 
 @app.route("/logout")
 def logout():
