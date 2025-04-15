@@ -533,8 +533,8 @@ def api_drones():
     # Generar varios drones simulados
     mock_data = []
     for i in range(5):
-        lat = base_lat + random.uniform(-0.002, 0.002)
-        lon = base_lon + random.uniform(-0.002, 0.002)
+        lat = base_lat + random.uniform(-0.02, 0.02)
+        lon = base_lon + random.uniform(-0.02, 0.02)
 
         mock_data.append({
             "drone_id": f"sim_{i+1:03}",
