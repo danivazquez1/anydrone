@@ -5,16 +5,55 @@
 <h2 class="mb-4">Available Drones on Map</h2>
 <div id="map" style="height: 600px;"></div>
 
+<style>
+    .legend-container {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        padding: 1rem 1.25rem;
+        max-width: 400px;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.6rem;
+    }
+    .legend-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        border: 3px solid;
+    }
+    </style>
+
 <!-- Legend -->
-<div class="mt-4">
-    <h6>Legend:</h6>
-    <ul class="list-unstyled small">
-        <li><span style="color:#28a745">●</span> border + <span style="color:#007bff">●</span> fill = Found around you & Available</li>
-        <li><span style="color:#dc3545">●</span> border + <span style="color:#007bff">●</span> fill = Found around you & Not Available</li>
-        <li><span style="color:#28a745">●</span> border + <span style="color:#ffc107">●</span> fill = Found by other user & Available</li>
-        <li><span style="color:#dc3545">●</span> border + <span style="color:#ffc107">●</span> fill = Found by other & Not Available</li>
-    </ul>
+<div class="legend-container">
+    <h6 class="mb-3">🛰️ Drone Legend</h6>
+
+    <div class="legend-item">
+        <span class="legend-icon" style="border-color:#28a745; background-color:#007bff;"></span>
+        Found near you & Available
+    </div>
+
+    <div class="legend-item">
+        <span class="legend-icon" style="border-color:#dc3545; background-color:#007bff;"></span>
+        Found near you & Not Available
+    </div>
+
+    <div class="legend-item">
+        <span class="legend-icon" style="border-color:#28a745; background-color:#ffc107;"></span>
+        Other user’s drone & Available
+    </div>
+
+    <div class="legend-item">
+        <span class="legend-icon" style="border-color:#dc3545; background-color:#ffc107;"></span>
+        Other user’s drone & Not Available
+    </div>
 </div>
+
 
 <!-- Leaflet Styles and Scripts -->
 <link

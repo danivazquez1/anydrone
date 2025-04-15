@@ -523,33 +523,42 @@ def access_service(contract_id):
 #             drone_data.append(drone)
 #     return jsonify(drone_data)
 
+
 @app.route("/api/drones")
 def api_drones():
-    # Simular movimiento aleatorio
-    lat = 42.24 + random.uniform(-0.0015, 0.0015)
-    lon = -8.72 + random.uniform(-0.0015, 0.0015)
+    # Base de coordenadas
+    base_lat = 42.24
+    base_lon = -8.72
 
-    mock_data = [{
-        "drone_id": "sim_001",
-        "model": "SimuDrone X1",
-        "manufacturer": "SimCo",
-        "camera_quality": "4K",
-        "max_load": 2.0,
-        "flight_time": 25,
-        "latitude": lat,
-        "longitude": lon,
-        "owner_id": "local_user",
-        "services": [
-            {
-                "name": "Aerial Photography",
-                "description": "HD photography from above",
-                "price": 30.0,
-                "is_available": True,
-                "service_id": "srv_sim_01"
-            }
-        ]
-    }]
+    # Generar varios drones simulados
+    mock_data = []
+    for i in range(5):
+        lat = base_lat + random.uniform(-0.002, 0.002)
+        lon = base_lon + random.uniform(-0.002, 0.002)
+
+        mock_data.append({
+            "drone_id": f"sim_{i+1:03}",
+            "model": f"SimuDrone {chr(65 + i)}",
+            "manufacturer": "SimCo",
+            "camera_quality": "4K" if i % 2 == 0 else "HD",
+            "max_load": round(random.uniform(1.0, 2.5), 1),
+            "flight_time": random.randint(20, 40),
+            "latitude": lat,
+            "longitude": lon,
+            "owner_id": "local_user" if i < 3 else "other_user",
+            "services": [
+                {
+                    "name": "Surveillance" if i % 2 == 0 else "Aerial Photography",
+                    "description": "Automated patrol" if i % 2 == 0 else "Photos from above",
+                    "price": 25.0 + i * 2,
+                    "is_available": i % 3 != 0,  # 1 y 2 sí, 3 no, 4 sí, 5 no...
+                    "service_id": f"srv_sim_{i+1:03}"
+                }
+            ]
+        })
+
     return jsonify(mock_data)
+
 
 
 
