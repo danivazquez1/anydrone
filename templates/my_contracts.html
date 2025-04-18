@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}My Contracts{% endblock %}
+
 {% block content %}
 <h2>My Contracted Services</h2>
 
@@ -23,7 +24,11 @@
                     <td>{{ c["service_name"] }}</td>
                     <td>{{ c["drone_model"] }}</td>
                     <td>{{ c["owner_name"] }}</td>
-                    <td>{{ c["start_time"] }}</td>
+                    <td>
+                        <span class="contract-start-time" data-utc="{{ c['start_time'] }}">
+                            {{ c['start_time'] }}
+                        </span>
+                    </td>
                     <td>{{ c["duration_hours"] }}</td>
                     <td>{{ c["notes"] or '' }}</td>
                     <td>
@@ -50,4 +55,21 @@
 {% else %}
     <div class="alert alert-info mt-4">You have not contracted any services yet.</div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".contract-start-time").forEach(el => {
+            const utcString = el.dataset.utc;
+            if (utcString) {
+                const localDate = new Date(utcString);
+                el.textContent = localDate.toLocaleString('es-ES', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}
