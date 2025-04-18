@@ -61,14 +61,15 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll(".contract-start-time").forEach(el => {
-            const utcString = el.dataset.utc;
-            if (utcString) {
-                const localDate = new Date(utcString);
-                el.textContent = localDate.toLocaleString('es-ES', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                });
+            let utcString = el.dataset.utc;
+            if (utcString && !utcString.endsWith("Z") && !utcString.includes("+")) {
+                utcString += "Z"; // Fuerza tratarlo como UTC si no lo indica
             }
+            const localDate = new Date(utcString);
+            el.textContent = localDate.toLocaleString('es-ES', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
         });
     });
 </script>
