@@ -56,32 +56,41 @@ def register():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
-        password = request.form["password"].strip()
+        password = request.form.get("password", "").strip()
+        accepted_terms = request.form.get("accept_terms")
 
+        # Validación de campos vacíos
         if not name or not email or not password:
-            flash("All fields are required.", "warning")
+            flash("Todos los campos son obligatorios.", "warning")
             return render_template("register.html", name=name, email=email)
 
+        # Validación de aceptación de términos
+        if not accepted_terms:
+            flash("Debe aceptar los Términos y Condiciones para registrarse.", "warning")
+            return render_template("register.html", name=name, email=email)
+
+        # Verificar si el usuario ya existe
         existing = list(db.collection("users").where("user_email_address", "==", email).stream())
         if existing:
-            flash("Email already registered.", "warning")
+            flash("El correo electrónico ya está registrado.", "warning")
             return render_template("register.html", name=name, email=email)
 
+        # Crear usuario
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-
         user_ref = db.collection("users").add({
             "user_name": name,
             "user_email_address": email,
-            "user_password": hashed_password
+            "user_password": hashed_password,
+            "accepted_terms": True
         })
-        user_id = user_ref[1].id
 
+        user_id = user_ref[1].id
         update_realtime_db(f"users/{user_id}", {
             "user_name": name,
             "user_email_address": email
         })
 
-        flash("Registration successful. Please log in.", "success")
+        flash("Registro completado correctamente. Por favor, inicie sesión.", "success")
         return redirect(url_for("login"))
 
     return render_template("register.html")
@@ -560,6 +569,9 @@ def api_drones():
     return jsonify(mock_data)
 
 
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
 
 
 
