@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 import json
 import os
 import random
+import logging
+logging.basicConfig(level=logging.INFO)
 
 # --- Flask Setup ---
 app = Flask(__name__)
@@ -496,10 +498,10 @@ def access_service(contract_id):
     end_time = start_time + timedelta(hours=duration)
     now = datetime.now()
 
-    print("DEBUG - now:", now)
-    print("DEBUG - start:", start_time)
-    print("DEBUG - end:", end_time)
-
+    logging.info(f"DEBUG - now: {now}")
+    logging.info(f"DEBUG - start: {start_time}")
+    logging.info(f"DEBUG - end: {end_time}")
+    
     if now < start_time:
         flash("Your session hasn't started yet", "info")
         return redirect(url_for("dashboard"))
