@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import math
 import requests
 from firebase_admin import db as realtime_db
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import os
 import random
@@ -467,6 +467,8 @@ def sync_drones():
         return jsonify({"error": str(e)}), 500
 
 
+
+
 @app.route("/access_service/<contract_id>")
 def access_service(contract_id):
     if "user_id" not in session:
@@ -488,20 +490,25 @@ def access_service(contract_id):
         flash("This contract has not been confirmed", "warning")
         return redirect(url_for("dashboard"))
 
-    # ✅ Paso crítico: parsear correctamente el start_time como naive datetime
+    # ✅ Convertir start_time a datetime UTC-aware
     try:
-        start_time = datetime.strptime(contract["start_time"], "%Y-%m-%dT%H:%M")
-    except ValueError:
-        start_time = datetime.fromisoformat(contract["start_time"]).replace(tzinfo=None)
+        start_time = datetime.fromisoformat(contract["start_time"]).replace(tzinfo=timezone.utc)
+    except Exception as e:
+        flash("Error interpreting contract start time.", "danger")
+        logging.error(f"Error parsing start_time: {e}")
+        return redirect(url_for("dashboard"))
 
     duration = float(contract["duration_hours"])
     end_time = start_time + timedelta(hours=duration)
-    now = datetime.now()
 
+    # ✅ Obtener hora actual en UTC-aware format
+    now = datetime.now(timezone.utc)
+
+    # ✅ Debug logs para Render
     logging.info(f"DEBUG - now: {now}")
     logging.info(f"DEBUG - start: {start_time}")
     logging.info(f"DEBUG - end: {end_time}")
-    
+
     if now < start_time:
         flash("Your session hasn't started yet", "info")
         return redirect(url_for("dashboard"))
@@ -510,7 +517,7 @@ def access_service(contract_id):
         flash("Your session has expired", "warning")
         return redirect(url_for("dashboard"))
 
-    # ✅ Redirigir si todo está OK
+    # ✅ Redirigir al stream si todo está correcto
     service_doc = db.collection("services").document(contract["service_id"]).get()
     stream_url = service_doc.to_dict().get("stream_url")
 
@@ -519,6 +526,7 @@ def access_service(contract_id):
         return redirect(url_for("dashboard"))
 
     return redirect(stream_url)
+
 
 
 @app.route("/api/drones")

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Contract Service{% endblock %}
+
 {% block content %}
 <h2>Contract Service: {{ service["service_name"] }}</h2>
 <p><b>Drone:</b> {{ service["model"] }} ({{ service["manufacturer"] }})</p>
@@ -20,4 +21,16 @@
     </div>
     <button type="submit" class="btn btn-primary w-100">Confirm Contract</button>
 </form>
+
+<!-- Script para convertir fecha local a UTC -->
+<script>
+    document.querySelector("form").addEventListener("submit", function (e) {
+        const input = document.querySelector('input[name="start_time"]');
+        if (input && input.value) {
+            const localDate = new Date(input.value);
+            const utcString = localDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+            input.value = utcString;
+        }
+    });
+</script>
 {% endblock %}
