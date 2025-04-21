@@ -583,6 +583,34 @@ def api_drones():
 def terms():
     return render_template("terms.html")
 
+@app.route("/edit_drone/<drone_id>", methods=["GET", "POST"])
+def edit_drone(drone_id):
+    if "user_id" not in session:
+        flash("Login required", "danger")
+        return redirect(url_for("login"))
+
+    drone_ref = db.collection("drones").document(drone_id)
+    drone_doc = drone_ref.get()
+
+    if not drone_doc.exists:
+        flash("Drone not found", "danger")
+        return redirect(url_for("dashboard"))
+
+    drone = drone_doc.to_dict()
+
+    if request.method == "POST":
+        updated_data = {
+            "model": request.form.get("model"),
+            "manufacturer": request.form.get("manufacturer"),
+            "camera_quality": request.form.get("camera_quality"),
+            "max_load": float(request.form.get("max_load")),
+            "flight_time": int(request.form.get("flight_time")),
+        }
+        drone_ref.update(updated_data)
+        flash("Drone updated successfully!", "success")
+        return redirect(url_for("dashboard"))
+
+    return render_template("edit_drone.html", drone=drone, drone_id=drone_id)
 
 
 @app.route("/logout")

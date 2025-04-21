@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Edit Drone{% endblock %}
+{% block content %}
+<h2>Edit Drone</h2>
+
+<form method="POST" class="p-4 border rounded bg-white mt-3">
+    <div class="mb-3">
+        <label>Model</label>
+        <input type="text" name="model" class="form-control" value="{{ drone.model }}" required>
+    </div>
+    <div class="mb-3">
+        <label>Manufacturer</label>
+        <input type="text" name="manufacturer" class="form-control" value="{{ drone.manufacturer }}" required>
+    </div>
+    <div class="mb-3">
+        <label>Camera Quality</label>
+        <input type="text" name="camera_quality" class="form-control" value="{{ drone.camera_quality }}">
+    </div>
+    <div class="mb-3">
+        <label>Max Load (kg)</label>
+        <input type="number" step="0.1" name="max_load" class="form-control" value="{{ drone.max_load }}">
+    </div>
+    <div class="mb-3">
+        <label>Flight Time (min)</label>
+        <input type="number" name="flight_time" class="form-control" value="{{ drone.flight_time }}">
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+</form>
+{% endblock %}
