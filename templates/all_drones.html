@@ -14,17 +14,17 @@
                     <p class="card-text">Max Load: {{ drone["max_load"] }} kg</p>
                     <p class="card-text">Flight Time: {{ drone["flight_time"] }} min</p>
                     {% if drone.owner_id == session['user_id'] %}
-                        <div class="mt-2 d-flex gap-2">
-                            <!-- Edit Button -->
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <!-- Edit Drone -->
                             <a href="{{ url_for('edit_drone', drone_id=drone_id) }}" class="btn btn-sm btn-outline-secondary">
-                                ✏️ Edit
+                                <i class="bi bi-pencil-square me-1"></i> Edit
                             </a>
 
-                            <!-- Delete Button -->
+                            <!-- Delete Drone -->
                             <form action="{{ url_for('delete_drone', drone_id=drone_id) }}" method="POST"
                                 onsubmit="return confirm('Are you sure you want to delete this drone?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    🗑️ Delete
+                                    <i class="bi bi-trash me-1"></i> Delete
                                 </button>
                             </form>
                         </div>
@@ -48,8 +48,8 @@
                                     {% if service["is_available"] %}
                                         <div class="mt-2">
                                             <a href="{{ url_for('contract_service', service_id=service['service_id']) }}"
-                                               class="btn btn-outline-success btn-sm">
-                                                Contract
+                                            class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-bag-check me-1"></i> Contract
                                             </a>
                                         </div>
                                     {% endif %}
