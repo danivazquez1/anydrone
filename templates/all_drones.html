@@ -13,9 +13,12 @@
                     <p class="card-text">Camera: {{ drone["camera_quality"] }}</p>
                     <p class="card-text">Max Load: {{ drone["max_load"] }} kg</p>
                     <p class="card-text">Flight Time: {{ drone["flight_time"] }} min</p>
-                    <a href="{{ url_for('edit_drone', drone_id=drone_id) }}" class="btn btn-sm btn-outline-secondary mb-3">
-                        ✏️ Edit Drone
-                    </a>
+                    {% if drone.owner_id == session['user_id'] %}
+                        <a href="{{ url_for('edit_drone', drone_id=drone_id) }}" class="btn btn-sm btn-outline-secondary mb-3">
+                            ✏️ Edit Drone
+                        </a>
+                    {% endif %}
+
                     
                     {% if drone["services"] %}
                         <hr>
