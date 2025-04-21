@@ -554,18 +554,50 @@ def api_drones():
     for d in drones:
         drone = d.to_dict()
 
-        # Requisitos: posición válida y detección reciente (últimos 10 segundos)
         if (
             drone.get("latitude") is not None
             and drone.get("longitude") is not None
             and drone.get("timestamp") is not None
             and current_time - drone["timestamp"] <= 10
         ):
-            # Obtener servicios relacionados
-            services = db.collection("services").where("drone_id", "==", d.id).stream()
-            drone["services"] = [s.to_dict() | {"service_id": s.id} for s in services]
-            drone["drone_id"] = d.id
+            drone_id = d.id
+            drone["drone_id"] = drone_id
+            drone_services = []
 
+            # Obtener servicios asociados a este dron
+            services = db.collection("services").where("drone_id", "==", drone_id).stream()
+
+            for s in services:
+                service = s.to_dict()
+                service["service_id"] = s.id
+                service["is_available"] = True  # se asume disponible por defecto
+
+                # Buscar contratos confirmados de este servicio
+                contracts = db.collection("contracts")\
+                    .where("service_id", "==", s.id)\
+                    .where("status", "==", "confirmed")\
+                    .stream()
+
+                for c in contracts:
+                    contract = c.to_dict()
+
+                    try:
+                        start = datetime.fromisoformat(contract["start_time"])
+                        duration = float(contract["duration_hours"])
+                        end = start + timedelta(hours=duration)
+                        now = datetime.utcnow()
+
+                        if start <= now <= end:
+                            service["is_available"] = False
+                            break  # si está ocupado, no seguimos buscando más contratos
+
+                    except Exception as e:
+                        print(f"Error parsing contract times: {e}")
+                        continue
+
+                drone_services.append(service)
+
+            drone["services"] = drone_services
             drone_data.append(drone)
 
     return jsonify(drone_data)
