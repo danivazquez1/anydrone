@@ -142,29 +142,43 @@ def dashboard():
 @app.route("/add_drone", methods=["GET", "POST"])
 def add_drone():
     if "user_id" not in session:
+        flash("Login required", "danger")
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        data = {
+        drone_id = request.form.get("drone_id", "").strip()
+        model = request.form.get("model", "").strip()
+        manufacturer = request.form.get("manufacturer", "").strip()
+        camera_quality = request.form.get("camera_quality", "").strip()
+        max_load = request.form.get("max_load", type=float)
+        flight_time = request.form.get("flight_time", type=int)
+
+        if not drone_id:
+            flash("Drone ID is required.", "warning")
+            return render_template("add_drone.html")
+
+        # Validar que no exista ese ID ya en Firestore
+        existing = db.collection("drones").document(drone_id).get()
+        if existing.exists:
+            flash("Drone ID already exists. Choose a different one.", "danger")
+            return render_template("add_drone.html")
+
+        # Guardar el nuevo dron
+        drone_data = {
             "owner_id": session["user_id"],
-            "model": request.form["model"],
-            "manufacturer": request.form["manufacturer"],
-            "camera_quality": request.form["camera_quality"],
-            "max_load": float(request.form["max_load"]),
-            "flight_time": int(request.form["flight_time"]),
-            "latitude": float(request.form["latitude"]),
-            "longitude": float(request.form["longitude"])
+            "model": model,
+            "manufacturer": manufacturer,
+            "camera_quality": camera_quality,
+            "max_load": max_load,
+            "flight_time": flight_time
         }
 
-        new_ref = db.collection("drones").add(data)
-        drone_id = new_ref[1].id
-        data["drone_id"] = drone_id
-        update_realtime_db(f"drones/{drone_id}", data)
+        db.collection("drones").document(drone_id).set(drone_data)
         flash("Drone added successfully!", "success")
         return redirect(url_for("dashboard"))
 
-
     return render_template("add_drone.html")
+
 
 
 @app.route("/add_service/<drone_id>", methods=["GET", "POST"])
@@ -258,7 +272,7 @@ def my_contracts():
         contract.update({
             "service_name": service["service_name"],
             "drone_model": drone["model"],
-            "owner_name": owner["user_name"],
+            "owner_name": (owner or {}).get("user_name", "Unknown"),
             "stream_url": service.get("stream_url", ""),  # ✅ clave para el botón
             "status": contract.get("status", "pending"),  # por si no tiene estado aún
             "contract_id": c.id  # útil para otras acciones futuras

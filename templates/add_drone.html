@@ -4,6 +4,10 @@
 <h2 class="text-center">Add a New Drone</h2>
 <form method="POST" class="p-4 border rounded bg-white">
     <div class="mb-3">
+        <label for="drone_id">Drone ID (unique)</label>
+        <input type="text" name="drone_id" class="form-control" required>
+    </div>
+    <div class="mb-3">
         <label>Model</label>
         <input type="text" name="model" class="form-control" required>
     </div>
@@ -24,14 +28,6 @@
         <input type="number" name="flight_time" class="form-control" required>
     </div>
     
-    <div class="mb-3">
-        <label>Latitude</label>
-        <input type="number" name="latitude" step="0.000001" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label>Longitude</label>
-        <input type="number" name="longitude" step="0.000001" class="form-control" required>
-    </div>
     <button type="submit" class="btn btn-primary w-100">Add Drone</button>
 </form>
 {% endblock %}
