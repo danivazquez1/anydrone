@@ -31,28 +31,17 @@
 
 <!-- Legend -->
 <div class="legend-container">
-    <h6 class="mb-3">🛰️ Drone Legend</h6>
+    <h6 class="mb-3">Drone Legend</h6>
 
     <div class="legend-item">
         <span class="legend-icon" style="border-color:#28a745; background-color:#007bff;"></span>
-        Found near you & Available
+        Available Drones
     </div>
-
+    
     <div class="legend-item">
         <span class="legend-icon" style="border-color:#dc3545; background-color:#007bff;"></span>
-        Found near you & Not Available
+        Unavailable Drones
     </div>
-
-    <div class="legend-item">
-        <span class="legend-icon" style="border-color:#28a745; background-color:#ffc107;"></span>
-        Other user’s drone & Available
-    </div>
-
-    <div class="legend-item">
-        <span class="legend-icon" style="border-color:#dc3545; background-color:#ffc107;"></span>
-        Other user’s drone & Not Available
-    </div>
-</div>
 
 
 <!-- Leaflet Styles and Scripts -->
@@ -70,10 +59,8 @@
     }).addTo(map);
 
     const colorMap = {
-        greenblue: { color: "#28a745", fillColor: "#007bff" },
-        redblue: { color: "#dc3545", fillColor: "#007bff" },
-        greenyellow: { color: "#28a745", fillColor: "#ffc107" },
-        redyellow: { color: "#dc3545", fillColor: "#ffc107" }
+        available: { color: "#28a745", fillColor: "#007bff" },     // Green border, blue fill
+        unavailable: { color: "#dc3545", fillColor: "#007bff" }    // Red border, blue fill
     };
 
     const markers = {}; // Guardar marcadores por drone ID
@@ -90,14 +77,9 @@
             const droneId = drone.drone_id || drone.uas_id || (drone.model + drone.latitude);
             currentDroneIds.add(droneId);
 
-            const isScript = drone.owner_id === "local_user";
             const isAvailable = drone.services.some(s => s.is_available);
-            let markerColor;
+            const markerColor = isAvailable ? "available" : "unavailable";
 
-            if (isScript && isAvailable) markerColor = "greenblue";
-            else if (isScript && !isAvailable) markerColor = "redblue";
-            else if (!isScript && isAvailable) markerColor = "greenyellow";
-            else markerColor = "redyellow";
 
             let popup = `<strong>${drone.model}</strong><br>`;
             popup += `Manufacturer: ${drone.manufacturer}<br>`;

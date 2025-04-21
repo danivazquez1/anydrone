@@ -10,6 +10,8 @@ import json
 import os
 import random
 import logging
+import time 
+
 logging.basicConfig(level=logging.INFO)
 
 # --- Flask Setup ---
@@ -546,14 +548,26 @@ def access_service(contract_id):
 @app.route("/api/drones")
 def api_drones():
     drone_data = []
+    current_time = time.time()
+
     drones = db.collection("drones").stream()
     for d in drones:
         drone = d.to_dict()
-        if drone.get("latitude") is not None and drone.get("longitude") is not None:
+
+        # Requisitos: posición válida y detección reciente (últimos 10 segundos)
+        if (
+            drone.get("latitude") is not None
+            and drone.get("longitude") is not None
+            and drone.get("timestamp") is not None
+            and current_time - drone["timestamp"] <= 10
+        ):
+            # Obtener servicios relacionados
             services = db.collection("services").where("drone_id", "==", d.id).stream()
             drone["services"] = [s.to_dict() | {"service_id": s.id} for s in services]
             drone["drone_id"] = d.id
+
             drone_data.append(drone)
+
     return jsonify(drone_data)
 
 
