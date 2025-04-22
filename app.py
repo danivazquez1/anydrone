@@ -28,6 +28,12 @@ firebase_admin.initialize_app(cred, {
 })
 db = firestore.client()
 
+drone_cache = {
+    "data": [],
+    "last_updated": 0  # timestamp de la última actualización real
+}
+
+
 
 # --- Utils ---
 def haversine(lat1, lon1, lat2, lon2):
@@ -547,52 +553,56 @@ def access_service(contract_id):
 
 @app.route("/api/drones")
 def api_drones():
-    drone_data = []
-    current_time = time.time()
+    now = time.time()
+    cache_duration = 5  # segundos
 
+    # Si no ha pasado suficiente tiempo, devolvemos la caché directamente
+    if now - drone_cache["last_updated"] < cache_duration:
+        return jsonify(drone_cache["data"])
+
+    # Si pasó suficiente tiempo, actualizamos desde Firestore
+    drone_data = []
     drones = db.collection("drones").stream()
+
     for d in drones:
         drone = d.to_dict()
 
+        # Filtrar por ubicación válida y detección reciente
         if (
-            drone.get("latitude") is not None
-            and drone.get("longitude") is not None
-            and drone.get("timestamp") is not None
-            and current_time - drone["timestamp"] <= 10
+            drone.get("latitude") is not None and
+            drone.get("longitude") is not None and
+            drone.get("timestamp") is not None and
+            now - drone["timestamp"] <= 10
         ):
             drone_id = d.id
             drone["drone_id"] = drone_id
             drone_services = []
 
-            # Obtener servicios asociados a este dron
             services = db.collection("services").where("drone_id", "==", drone_id).stream()
-
             for s in services:
                 service = s.to_dict()
                 service["service_id"] = s.id
-                service["is_available"] = True  # se asume disponible por defecto
+                service["is_available"] = True
 
-                # Buscar contratos confirmados de este servicio
-                contracts = db.collection("contracts")\
-                    .where("service_id", "==", s.id)\
-                    .where("status", "==", "confirmed")\
+                # ✅ Verificar contratos activos para este servicio
+                contracts = db.collection("contracts") \
+                    .where("service_id", "==", s.id) \
+                    .where("status", "==", "confirmed") \
                     .stream()
 
                 for c in contracts:
                     contract = c.to_dict()
-
                     try:
                         start = datetime.fromisoformat(contract["start_time"])
                         duration = float(contract["duration_hours"])
                         end = start + timedelta(hours=duration)
-                        now = datetime.utcnow()
+                        now_dt = datetime.utcnow()
 
-                        if start <= now <= end:
+                        if start <= now_dt <= end:
                             service["is_available"] = False
-                            break  # si está ocupado, no seguimos buscando más contratos
-
+                            break  # si uno está activo, lo marcamos como ocupado
                     except Exception as e:
-                        print(f"Error parsing contract times: {e}")
+                        print(f"Error parsing contract time: {e}")
                         continue
 
                 drone_services.append(service)
@@ -600,8 +610,11 @@ def api_drones():
             drone["services"] = drone_services
             drone_data.append(drone)
 
-    return jsonify(drone_data)
+    # ✅ Guardamos en caché
+    drone_cache["data"] = drone_data
+    drone_cache["last_updated"] = now
 
+    return jsonify(drone_data)
 
 # @app.route("/api/drones")
 # def api_drones():
