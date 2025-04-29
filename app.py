@@ -272,18 +272,31 @@ def my_contracts():
     query = db.collection("contracts").where("user_id", "==", session["user_id"]).stream()
     for c in query:
         contract = c.to_dict()
+        contract["contract_id"] = c.id  # Siempre añade el ID
 
-        service = db.collection("services").document(contract["service_id"]).get().to_dict()
-        drone = db.collection("drones").document(service["drone_id"]).get().to_dict()
-        owner = db.collection("users").document(drone["owner_id"]).get().to_dict()
+        # Obtener el servicio
+        service_doc = db.collection("services").document(contract["service_id"]).get()
+        service = service_doc.to_dict()
+        if not service:
+            continue  # omitir si no existe
 
+        # Obtener el dron
+        drone_doc = db.collection("drones").document(service.get("drone_id")).get()
+        drone = drone_doc.to_dict()
+        if not drone:
+            continue  # omitir si no existe
+
+        # Obtener el dueño
+        owner_doc = db.collection("users").document(drone.get("owner_id")).get()
+        owner = owner_doc.to_dict() if owner_doc.exists else {}
+
+        # Añadir campos al contrato
         contract.update({
-            "service_name": service["service_name"],
-            "drone_model": drone["model"],
-            "owner_name": (owner or {}).get("user_name", "Unknown"),
-            "stream_url": service.get("stream_url", ""),  # ✅ clave para el botón
-            "status": contract.get("status", "pending"),  # por si no tiene estado aún
-            "contract_id": c.id  # útil para otras acciones futuras
+            "service_name": service.get("service_name", "Unnamed Service"),
+            "drone_model": drone.get("model", "Unknown"),
+            "owner_name": owner.get("user_name", "Unknown"),
+            "stream_url": service.get("stream_url", ""),
+            "status": contract.get("status", "pending"),
         })
 
         contracts.append(contract)

@@ -21,30 +21,36 @@
             <tbody>
                 {% for c in contracts %}
                 <tr>
-                    <td>{{ c["service_name"] }}</td>
-                    <td>{{ c["drone_model"] }}</td>
-                    <td>{{ c["owner_name"] }}</td>
+                    <td>{{ c.get("service_name", "N/A") }}</td>
+                    <td>{{ c.get("drone_model", "N/A") }}</td>
+                    <td>{{ c.get("owner_name", "N/A") }}</td>
                     <td>
-                        <span class="contract-start-time" data-utc="{{ c['start_time'] }}">
-                            {{ c['start_time'] }}
-                        </span>
+                        {% if c.get("start_time") %}
+                            <span class="contract-start-time" data-utc="{{ c["start_time"] }}">
+                                {{ c["start_time"] }}
+                            </span>
+                        {% else %}
+                            <em>No time set</em>
+                        {% endif %}
                     </td>
-                    <td>{{ c["duration_hours"] }}</td>
-                    <td>{{ c["notes"] or '' }}</td>
+                    <td>{{ c.get("duration_hours", "-") }}</td>
+                    <td>{{ c.get("notes", "") }}</td>
                     <td>
-                        {% if c["status"] == 'pending' %}
+                        {% if c.get("status") == 'pending' %}
                             <span class="badge bg-warning text-dark">Pending</span>
-                        {% elif c["status"] == 'confirmed' %}
+                        {% elif c.get("status") == 'confirmed' %}
                             <span class="badge bg-success d-block">Confirmed</span>
-                            {% if c["stream_url"] %}
+                            {% if c.get("stream_url") %}
                                 <a href="{{ url_for('access_service', contract_id=c['contract_id']) }}"
-                                    target="_blank"
-                                    class="btn btn-sm btn-outline-primary mt-1">
-                                    Acceder al servicio
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-primary mt-1">
+                                   Acceder al servicio
                                 </a>
                             {% endif %}
-                        {% elif c["status"] == 'cancelled' %}
+                        {% elif c.get("status") == 'cancelled' %}
                             <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Unknown</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -63,7 +69,7 @@
         document.querySelectorAll(".contract-start-time").forEach(el => {
             let utcString = el.dataset.utc;
             if (utcString && !utcString.endsWith("Z") && !utcString.includes("+")) {
-                utcString += "Z"; // Fuerza tratarlo como UTC si no lo indica
+                utcString += "Z";
             }
             const localDate = new Date(utcString);
             el.textContent = localDate.toLocaleString('es-ES', {
