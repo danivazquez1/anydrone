@@ -89,7 +89,7 @@
                 drone.services.forEach(service => {
                     popup += `<li>${service.name} - €${service.price}/h`;
                     if (service.is_available) {
-                        popup += ` <a href="/contract/${service.service_id}" class="btn btn-sm btn-success ms-1">Contract</a>`;
+                        popup += ` <a href="/contract/${service.service_id}" class="btn btn-sm btn-primary ms-1">Contract</a>`;
                     } else {
                         popup += ` <span class="text-muted">(Unavailable)</span>`;
                     }

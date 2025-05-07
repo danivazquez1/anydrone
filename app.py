@@ -365,6 +365,9 @@ def approve_request(contract_id):
     return redirect(url_for("my_requests"))
 
 
+
+
+
 @app.route("/reject_request/<contract_id>")
 def reject_request(contract_id):
     if "user_id" not in session:
@@ -702,6 +705,37 @@ def edit_drone(drone_id):
         return redirect(url_for("dashboard"))
 
     return render_template("edit_drone.html", drone=drone, drone_id=drone_id)
+
+@app.route("/cancel_contract/<contract_id>")
+def cancel_contract(contract_id):
+    if "user_id" not in session:
+        flash("Login required", "danger")
+        return redirect(url_for("login"))
+
+    contract_ref = db.collection("contracts").document(contract_id)
+    contract_doc = contract_ref.get()
+
+    if not contract_doc.exists:
+        flash("Contract not found.", "danger")
+        return redirect(url_for("my_contracts"))
+
+    contract = contract_doc.to_dict()
+
+    # ✅ solo el cliente puede cancelar su contrato
+    if contract["user_id"] != session["user_id"]:
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for("my_contracts"))
+
+    if contract["status"] not in ("pending", "confirmed"):
+        flash("This contract cannot be cancelled.", "warning")
+        return redirect(url_for("my_contracts"))
+
+    # ✅ actualizar estado
+    contract_ref.update({"status": "cancelled"})
+    flash("Contract cancelled successfully.", "info")
+    return redirect(url_for("my_contracts"))
+
+
 
 
 

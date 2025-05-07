@@ -38,6 +38,11 @@
                     <td>
                         {% if c.get("status") == 'pending' %}
                             <span class="badge bg-warning text-dark">Pending</span>
+                            <a href="{{ url_for('cancel_contract', contract_id=c['contract_id']) }}"
+                               class="btn btn-sm btn-outline-danger mt-2"
+                               onclick="return confirm('Are you sure you want to cancel this contract?');">
+                               Cancel
+                            </a>
                         {% elif c.get("status") == 'confirmed' %}
                             <span class="badge bg-success d-block">Confirmed</span>
                             {% if c.get("stream_url") %}
@@ -47,12 +52,18 @@
                                    Acceder al servicio
                                 </a>
                             {% endif %}
+                            <a href="{{ url_for('cancel_contract', contract_id=c['contract_id']) }}"
+                               class="btn btn-sm btn-outline-danger mt-2"
+                               onclick="return confirm('Are you sure you want to cancel this contract?');">
+                               Cancel
+                            </a>
                         {% elif c.get("status") == 'cancelled' %}
-                            <span class="badge bg-danger">Rejected</span>
+                            <span class="badge bg-danger">Cancelled</span>
                         {% else %}
                             <span class="badge bg-secondary">Unknown</span>
                         {% endif %}
                     </td>
+                    
                 </tr>
                 {% endfor %}
             </tbody>
