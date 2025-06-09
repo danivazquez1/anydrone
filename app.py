@@ -832,6 +832,7 @@ def chat(chat_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for("dashboard"))
 
+
     contract_ref = db.collection("contracts").document(chat_data["contract_id"])
     contract_snapshot = contract_ref.get()
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
