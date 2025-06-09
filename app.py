@@ -840,7 +840,16 @@ def chat(chat_id):
     # Retrieve related service and drone details for context in the chat
     service = {}
     drone = {}
-    if contract:
+    messages = []
+    for m in messages_query:
+        data = m.to_dict()
+        ts = data.get("timestamp")
+        if ts:
+            local_ts = ts.astimezone()
+            data["date_str"] = local_ts.strftime("%Y-%m-%d")
+            data["time_str"] = local_ts.strftime("%H:%M")
+        data["is_me"] = data.get("sender_id") == session["user_id"]
+        messages.append(data)
         service_doc = db.collection("services").document(contract.get("service_id", "")).get()
         if service_doc.exists:
             service = service_doc.to_dict()

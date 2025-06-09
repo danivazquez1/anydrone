@@ -18,7 +18,10 @@
                 {% endif %}
             </li>
             <li><strong>Duration:</strong> {{ contract.duration_hours }} h</li>
-            <li><strong>Notes:</strong> {{ contract.notes or '' }}</li>
+        {% if loop.first or m.date_str != loop.previtem.date_str %}
+            <div class="text-center text-muted my-2">{{ m.date_str }}</div>
+        {% endif %}
+            <small class="text-muted">{{ m.time_str }}</small>
         </ul>
     </div>
 </div>
