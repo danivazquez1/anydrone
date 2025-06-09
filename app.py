@@ -852,6 +852,7 @@ def chat(chat_id):
                     "content": message,
                     "timestamp": datetime.utcnow()
                 })
+
         return redirect(url_for("chat", chat_id=chat_id))
 
     messages_query = chat_ref.collection("messages").order_by("timestamp").stream()
@@ -873,6 +874,7 @@ def chat(chat_id):
         is_owner=session["user_id"] == chat_data.get("owner_id"),
         user_id=session["user_id"]
     )
+
 @app.route("/logout")
 def logout():
     session.clear()
