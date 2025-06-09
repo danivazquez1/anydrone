@@ -287,6 +287,7 @@ def contract_service(service_id):
             "created_at": datetime.utcnow(),
             "last_read_owner": None,
             "last_read_client": None
+
         })
         chat_id = chat_ref[1].id
 
@@ -784,6 +785,7 @@ def my_chats():
     user_id = session["user_id"]
     for field in ("client_id", "owner_id"):
         docs = db.collection("chats").where(field, "==", user_id).stream()
+
         for d in docs:
             if d.id in seen:
                 continue
@@ -806,6 +808,7 @@ def my_chats():
                 msg_check = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
                 has_unread = any(True for _ in msg_check)
 
+
             chats.append({
                 "chat_id": d.id,
                 "service_name": service.get("service_name", "Service"),
@@ -813,6 +816,7 @@ def my_chats():
                 "client_name": client.get("user_name", "Client"),
                 "status": contract.get("status", "pending"),
                 "unread": has_unread
+
             })
 
     return render_template("my_chats.html", chats=chats)
@@ -854,6 +858,7 @@ def open_chat(contract_id):
             "created_at": datetime.utcnow(),
             "last_read_owner": None,
             "last_read_client": None
+
         })
         chat_id = chat_ref[1].id
 
@@ -895,6 +900,7 @@ def chat(chat_id):
             drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
             drone = drone_doc.to_dict() if drone_doc.exists else {}
 
+
     if request.method == "POST":
         action = request.form.get("action")
         if action == "accept" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
@@ -916,6 +922,7 @@ def chat(chat_id):
                 "status": "cancelled",
                 "timestamp": datetime.utcnow()
             })
+
             flash("Contract rejected.", "warning")
         else:
             message = request.form.get("message", "").strip()
@@ -939,6 +946,7 @@ def chat(chat_id):
         data["is_me"] = data.get("sender_id") == session["user_id"]
         data["is_system"] = data.get("sender_id") == "system"
         messages.append(data)
+
 
     owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
     client_doc = db.collection("users").document(chat_data["client_id"]).get()
