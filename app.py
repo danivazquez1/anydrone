@@ -739,6 +739,79 @@ def cancel_contract(contract_id):
 
 
 
+
+@app.route("/open_chat/<contract_id>")
+def open_chat(contract_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    contract_doc = db.collection("contracts").document(contract_id).get()
+    if not contract_doc.exists:
+        flash("Contract not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    contract = contract_doc.to_dict()
+    service = db.collection("services").document(contract["service_id"]).get().to_dict()
+    drone = db.collection("drones").document(service["drone_id"]).get().to_dict()
+
+    owner_id = drone.get("owner_id")
+    client_id = contract.get("user_id")
+
+    if session["user_id"] not in (owner_id, client_id):
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("dashboard"))
+
+    chats = list(db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream())
+    if chats:
+        chat_id = chats[0].id
+    else:
+        chat_ref = db.collection("chats").add({
+            "contract_id": contract_id,
+            "owner_id": owner_id,
+            "client_id": client_id,
+            "created_at": datetime.utcnow()
+        })
+        chat_id = chat_ref[1].id
+
+    return redirect(url_for("chat", chat_id=chat_id))
+
+@app.route("/chat/<chat_id>", methods=["GET", "POST"])
+def chat(chat_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    chat_ref = db.collection("chats").document(chat_id)
+    chat_doc = chat_ref.get()
+    if not chat_doc.exists:
+        flash("Chat not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    chat_data = chat_doc.to_dict()
+    if session["user_id"] not in (chat_data.get("owner_id"), chat_data.get("client_id")):
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        message = request.form.get("message", "").strip()
+        if message:
+            chat_ref.collection("messages").add({
+                "sender_id": session["user_id"],
+                "content": message,
+                "timestamp": datetime.utcnow()
+            })
+        return redirect(url_for("chat", chat_id=chat_id))
+
+    messages_query = chat_ref.collection("messages").order_by("timestamp").stream()
+    messages = [m.to_dict() | {"is_me": m.to_dict().get("sender_id") == session["user_id"]} for m in messages_query]
+
+    owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
+    client_doc = db.collection("users").document(chat_data["client_id"]).get()
+    user_names = {
+        chat_data["owner_id"]: owner_doc.to_dict().get("user_name", "Owner") if owner_doc.exists else "Owner",
+        chat_data["client_id"]: client_doc.to_dict().get("user_name", "Client") if client_doc.exists else "Client"
+    }
+
+    return render_template("chat.html", messages=messages, chat_id=chat_id, user_names=user_names)
 @app.route("/logout")
 def logout():
     session.clear()
