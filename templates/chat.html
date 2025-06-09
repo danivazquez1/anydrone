@@ -2,6 +2,27 @@
 {% block title %}Chat{% endblock %}
 {% block content %}
 <h2>Chat</h2>
+<div class="mb-3">
+    <strong>Status:</strong>
+    {% if contract.status == 'pending' %}
+        <span class="badge bg-warning text-dark">Pending</span>
+    {% elif contract.status == 'confirmed' %}
+        <span class="badge bg-success">Confirmed</span>
+    {% elif contract.status == 'cancelled' %}
+        <span class="badge bg-danger">Cancelled</span>
+    {% endif %}
+    {% if is_owner and contract.status == 'pending' %}
+        <form method="POST" class="d-inline">
+            <input type="hidden" name="action" value="accept">
+            <button class="btn btn-sm btn-success">Accept</button>
+        </form>
+        <form method="POST" class="d-inline ms-2">
+            <input type="hidden" name="action" value="reject">
+            <button class="btn btn-sm btn-danger">Reject</button>
+        </form>
+    {% endif %}
+</div>
+
 <div class="mb-4 border p-3 bg-white" style="max-height:400px; overflow-y:auto;">
     {% for m in messages %}
         <div class="mb-2 {% if m.is_me %}text-end{% endif %}">
