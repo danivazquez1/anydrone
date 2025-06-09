@@ -44,3 +44,4 @@ VALUES (1, 'Outback Flyer', 'AussieDrones', '4K', 2.3, 33, -33.8688, 151.2093);
 \n-When a service is requested a chat is automatically opened between the client and the drone owner. The owner can accept or reject the contract directly from the chat. All contract details are displayed within the chat so both parties have context.
 -Unread chat messages are highlighted in the Chats menu and a red badge appears in the navigation bar when there are new messages.
 -A system notification message is stored in the chat whenever a service is requested, accepted, or cancelled so all parties are alerted.
+
