@@ -287,9 +287,18 @@ def contract_service(service_id):
             "created_at": datetime.utcnow(),
             "last_read_owner": None,
             "last_read_client": None
-
         })
         chat_id = chat_ref[1].id
+
+        # notify the owner about the request
+        db.collection("chats").document(chat_id).collection("messages").add({
+            "sender_id": "system",
+            "content": "Servicio solicitado",
+            "type": "status",
+            "status": "pending",
+            "timestamp": datetime.utcnow()
+        })
+
 
         flash("Service requested. You can chat with the owner now.", "success")
         return redirect(url_for("chat", chat_id=chat_id))
@@ -397,6 +406,18 @@ def approve_request(contract_id):
 
     if drone["owner_id"] == session["user_id"]:
         contract_ref.update({"status": "confirmed"})
+
+        chat_docs = db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream()
+        chat_id = next((d.id for d in chat_docs), None)
+        if chat_id:
+            db.collection("chats").document(chat_id).collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato aceptado",
+                "type": "status",
+                "status": "confirmed",
+                "timestamp": datetime.utcnow()
+            })
+
         flash("Contract approved successfully", "success")
     else:
         flash("Unauthorized action", "danger")
@@ -419,6 +440,18 @@ def reject_request(contract_id):
 
     if drone["owner_id"] == session["user_id"]:
         contract_ref.update({"status": "cancelled"})
+
+        chat_docs = db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream()
+        chat_id = next((d.id for d in chat_docs), None)
+        if chat_id:
+            db.collection("chats").document(chat_id).collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato cancelado",
+                "type": "status",
+                "status": "cancelled",
+                "timestamp": datetime.utcnow()
+            })
+
         flash("Contract rejected", "warning")
     else:
         flash("Unauthorized action", "danger")
@@ -771,6 +804,19 @@ def cancel_contract(contract_id):
 
     # ✅ actualizar estado
     contract_ref.update({"status": "cancelled"})
+
+    # send system message to chat
+    chat_docs = db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream()
+    chat_id = next((d.id for d in chat_docs), None)
+    if chat_id:
+        db.collection("chats").document(chat_id).collection("messages").add({
+            "sender_id": "system",
+            "content": "Contrato cancelado",
+            "type": "status",
+            "status": "cancelled",
+            "timestamp": datetime.utcnow()
+        })
+
     flash("Contract cancelled successfully.", "info")
     return redirect(url_for("my_contracts"))
 
@@ -816,7 +862,6 @@ def my_chats():
                 "client_name": client.get("user_name", "Client"),
                 "status": contract.get("status", "pending"),
                 "unread": has_unread
-
             })
 
     return render_template("my_chats.html", chats=chats)
@@ -858,11 +903,11 @@ def open_chat(contract_id):
             "created_at": datetime.utcnow(),
             "last_read_owner": None,
             "last_read_client": None
-
         })
         chat_id = chat_ref[1].id
 
     return redirect(url_for("chat", chat_id=chat_id))
+
 
 @app.route("/chat/<chat_id>", methods=["GET", "POST"])
 def chat(chat_id):
