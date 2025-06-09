@@ -836,6 +836,7 @@ def chat(chat_id):
     contract_snapshot = contract_ref.get()
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
 
+
     # Retrieve related service and drone details for context in the chat
     service = {}
     drone = {}
@@ -845,6 +846,7 @@ def chat(chat_id):
             service = service_doc.to_dict()
             drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
             drone = drone_doc.to_dict() if drone_doc.exists else {}
+
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -875,6 +877,7 @@ def chat(chat_id):
             data["time_str"] = local_ts.strftime("%H:%M")
         data["is_me"] = data.get("sender_id") == session["user_id"]
         messages.append(data)
+
 
     owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
     client_doc = db.collection("users").document(chat_data["client_id"]).get()
