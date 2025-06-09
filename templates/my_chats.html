@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}My Chats{% endblock %}
+{% block content %}
+<h2>My Chats</h2>
+{% if chats %}
+<div class="table-responsive mt-4">
+<table class="table table-bordered table-striped">
+<thead class="table-light">
+<tr><th>Service</th><th>Owner</th><th>Client</th><th>Status</th><th></th></tr>
+</thead>
+<tbody>
+{% for c in chats %}
+<tr{% if c.unread %} class="table-info"{% endif %}>
+<td>{{ c.service_name }}</td>
+<td>{{ c.owner_name }}</td>
+<td>{{ c.client_name }}</td>
+<td>{{ c.status }}</td>
+<td>
+    <a href="{{ url_for('chat', chat_id=c.chat_id) }}" class="btn btn-sm btn-primary position-relative">
+        Open
+        {% if c.unread %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">!</span>
+        {% endif %}
+    </a>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<div class="alert alert-info mt-4">No chats yet.</div>
+{% endif %}
+{% endblock %}
