@@ -10,12 +10,21 @@
 </thead>
 <tbody>
 {% for c in chats %}
-<tr>
+<tr{% if c.unread %} class="table-info"{% endif %}>
+
 <td>{{ c.service_name }}</td>
 <td>{{ c.owner_name }}</td>
 <td>{{ c.client_name }}</td>
 <td>{{ c.status }}</td>
-<td><a href="{{ url_for('chat', chat_id=c.chat_id) }}" class="btn btn-sm btn-primary">Open</a></td>
+<td>
+    <a href="{{ url_for('chat', chat_id=c.chat_id) }}" class="btn btn-sm btn-primary position-relative">
+        Open
+        {% if c.unread %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">!</span>
+        {% endif %}
+    </a>
+</td>
+
 </tr>
 {% endfor %}
 </tbody>

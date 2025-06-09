@@ -34,6 +34,30 @@ drone_cache = {
 }
 
 
+# Context processor to show unread message count in navigation
+@app.context_processor
+def inject_unread_chats():
+    if "user_id" not in session:
+        return {"unread_chats": 0}
+
+    user_id = session["user_id"]
+    count = 0
+    for field in ("client_id", "owner_id"):
+        docs = db.collection("chats").where(field, "==", user_id).stream()
+        for d in docs:
+            data = d.to_dict()
+            last_read_field = "last_read_owner" if user_id == data.get("owner_id") else "last_read_client"
+            last_read = data.get(last_read_field)
+            if last_read is None:
+                new_query = d.reference.collection("messages").limit(1).stream()
+            else:
+                new_query = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
+            if any(True for _ in new_query):
+                count += 1
+                break
+    return {"unread_chats": count}
+
+
 
 # --- Utils ---
 def haversine(lat1, lon1, lat2, lon2):
@@ -260,7 +284,10 @@ def contract_service(service_id):
             "contract_id": contract_id,
             "owner_id": drone.get("owner_id"),
             "client_id": session["user_id"],
-            "created_at": datetime.utcnow()
+            "created_at": datetime.utcnow(),
+            "last_read_owner": None,
+            "last_read_client": None
+
         })
         chat_id = chat_ref[1].id
 
@@ -755,8 +782,10 @@ def my_chats():
 
     seen = set()
     chats = []
+    user_id = session["user_id"]
     for field in ("client_id", "owner_id"):
-        docs = db.collection("chats").where(field, "==", session["user_id"]).stream()
+        docs = db.collection("chats").where(field, "==", user_id).stream()
+
         for d in docs:
             if d.id in seen:
                 continue
@@ -766,12 +795,28 @@ def my_chats():
             service = db.collection("services").document(contract.get("service_id", "")).get().to_dict() or {}
             owner = db.collection("users").document(data["owner_id"]).get().to_dict() or {}
             client = db.collection("users").document(data["client_id"]).get().to_dict() or {}
+
+            # Determine last read timestamp for the current user
+            last_read_field = "last_read_owner" if user_id == data.get("owner_id") else "last_read_client"
+            last_read = data.get(last_read_field)
+            has_unread = False
+            if last_read is None:
+                # User never opened chat, check if any message exists
+                msg_check = d.reference.collection("messages").limit(1).stream()
+                has_unread = any(True for _ in msg_check)
+            else:
+                msg_check = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
+                has_unread = any(True for _ in msg_check)
+
+
             chats.append({
                 "chat_id": d.id,
                 "service_name": service.get("service_name", "Service"),
                 "owner_name": owner.get("user_name", "Owner"),
                 "client_name": client.get("user_name", "Client"),
-                "status": contract.get("status", "pending")
+                "status": contract.get("status", "pending"),
+                "unread": has_unread
+
             })
 
     return render_template("my_chats.html", chats=chats)
@@ -810,7 +855,10 @@ def open_chat(contract_id):
             "contract_id": contract_id,
             "owner_id": owner_id,
             "client_id": client_id,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.utcnow(),
+            "last_read_owner": None,
+            "last_read_client": None
+
         })
         chat_id = chat_ref[1].id
 
@@ -832,6 +880,12 @@ def chat(chat_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for("dashboard"))
 
+    # Update last read timestamp for the current user
+    if session["user_id"] == chat_data.get("owner_id"):
+        chat_ref.update({"last_read_owner": datetime.utcnow()})
+    else:
+        chat_ref.update({"last_read_client": datetime.utcnow()})
+
     contract_ref = db.collection("contracts").document(chat_data["contract_id"])
     contract_snapshot = contract_ref.get()
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
@@ -845,6 +899,7 @@ def chat(chat_id):
             service = service_doc.to_dict()
             drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
             drone = drone_doc.to_dict() if drone_doc.exists else {}
+
 
     if request.method == "POST":
         action = request.form.get("action")
