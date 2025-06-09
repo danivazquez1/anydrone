@@ -867,6 +867,7 @@ def chat(chat_id):
                 "status": "cancelled",
                 "timestamp": datetime.utcnow()
             })
+
             flash("Contract rejected.", "warning")
         else:
             message = request.form.get("message", "").strip()
@@ -890,6 +891,7 @@ def chat(chat_id):
         data["is_me"] = data.get("sender_id") == session["user_id"]
         data["is_system"] = data.get("sender_id") == "system"
         messages.append(data)
+
 
     owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
     client_doc = db.collection("users").document(chat_data["client_id"]).get()
