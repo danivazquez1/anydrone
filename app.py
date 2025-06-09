@@ -832,9 +832,20 @@ def chat(chat_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for("dashboard"))
 
+
     contract_ref = db.collection("contracts").document(chat_data["contract_id"])
     contract_snapshot = contract_ref.get()
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
+
+    # Retrieve related service and drone details for context in the chat
+    service = {}
+    drone = {}
+    if contract:
+        service_doc = db.collection("services").document(contract.get("service_id", "")).get()
+        if service_doc.exists:
+            service = service_doc.to_dict()
+            drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
+            drone = drone_doc.to_dict() if drone_doc.exists else {}
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -852,7 +863,6 @@ def chat(chat_id):
                     "content": message,
                     "timestamp": datetime.utcnow()
                 })
-
         return redirect(url_for("chat", chat_id=chat_id))
 
     messages_query = chat_ref.collection("messages").order_by("timestamp").stream()
@@ -871,10 +881,11 @@ def chat(chat_id):
         chat_id=chat_id,
         user_names=user_names,
         contract=contract,
+        service=service,
+        drone=drone,
         is_owner=session["user_id"] == chat_data.get("owner_id"),
         user_id=session["user_id"]
     )
-
 @app.route("/logout")
 def logout():
     session.clear()
