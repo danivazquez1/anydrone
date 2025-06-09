@@ -39,7 +39,10 @@
                     <td>
                         {% if r["status"] == 'pending' %}
                             <a href="{{ url_for('approve_request', contract_id=r['contract_id']) }}" class="btn btn-sm btn-success me-2">Approve</a>
-                            <a href="{{ url_for('reject_request', contract_id=r['contract_id']) }}" class="btn btn-sm btn-outline-danger">Reject</a>
+                            <a href="{{ url_for('reject_request', contract_id=r['contract_id']) }}" class="btn btn-sm btn-outline-danger me-2">Reject</a>
+                            <a href="{{ url_for('open_chat', contract_id=r['contract_id']) }}" class="btn btn-sm btn-outline-primary">Chat</a>
+                        {% elif r["status"] == 'confirmed' %}
+                            <a href="{{ url_for('open_chat', contract_id=r['contract_id']) }}" class="btn btn-sm btn-outline-primary">Chat</a>
                         {% else %}
                             <span class="text-muted">No action</span>
                         {% endif %}
