@@ -832,10 +832,10 @@ def chat(chat_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for("dashboard"))
 
-
     contract_ref = db.collection("contracts").document(chat_data["contract_id"])
     contract_snapshot = contract_ref.get()
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
+
 
     # Retrieve related service and drone details for context in the chat
     service = {}
@@ -846,6 +846,7 @@ def chat(chat_id):
             service = service_doc.to_dict()
             drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
             drone = drone_doc.to_dict() if drone_doc.exists else {}
+
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -866,7 +867,17 @@ def chat(chat_id):
         return redirect(url_for("chat", chat_id=chat_id))
 
     messages_query = chat_ref.collection("messages").order_by("timestamp").stream()
-    messages = [m.to_dict() | {"is_me": m.to_dict().get("sender_id") == session["user_id"]} for m in messages_query]
+    messages = []
+    for m in messages_query:
+        data = m.to_dict()
+        ts = data.get("timestamp")
+        if ts:
+            local_ts = ts.astimezone()
+            data["date_str"] = local_ts.strftime("%Y-%m-%d")
+            data["time_str"] = local_ts.strftime("%H:%M")
+        data["is_me"] = data.get("sender_id") == session["user_id"]
+        messages.append(data)
+
 
     owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
     client_doc = db.collection("users").document(chat_data["client_id"]).get()

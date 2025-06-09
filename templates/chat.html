@@ -43,13 +43,16 @@
         </form>
     {% endif %}
 </div>
-
 <div class="mb-4 border p-3 bg-white" style="max-height:400px; overflow-y:auto;">
     {% for m in messages %}
+        {% if loop.first or m.date_str != loop.previtem.date_str %}
+            <div class="text-center text-muted my-2">{{ m.date_str }}</div>
+        {% endif %}
         <div class="mb-2 {% if m.is_me %}text-end{% endif %}">
             <strong>{{ user_names.get(m.sender_id, 'User') }}:</strong>
             {{ m.content }}
-            <small class="text-muted">{{ m.timestamp }}</small>
+            <small class="text-muted">{{ m.time_str }}</small>
+
         </div>
     {% endfor %}
 </div>
