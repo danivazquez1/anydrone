@@ -22,11 +22,24 @@
         </ul>
     </div>
 </div>
-
-<div class="mb-3">
-    <strong>Status:</strong>
-    {% if contract.status == 'pending' %}
-        <span class="badge bg-warning text-dark">Pending</span>
+        {% if m.is_system %}
+            <div class="text-center my-2">
+                {% if m.status == 'confirmed' %}
+                    <span class="text-success fw-bold">{{ m.content }}</span>
+                {% elif m.status == 'cancelled' %}
+                    <span class="text-danger fw-bold">{{ m.content }}</span>
+                {% else %}
+                    <span class="text-muted">{{ m.content }}</span>
+                {% endif %}
+                <small class="text-muted d-block">{{ m.time_str }}</small>
+            </div>
+        {% else %}
+            <div class="mb-2 {% if m.is_me %}text-end{% endif %}">
+                <strong>{{ user_names.get(m.sender_id, 'User') }}:</strong>
+                {{ m.content }}
+                <small class="text-muted">{{ m.time_str }}</small>
+            </div>
+        {% endif %}
     {% elif contract.status == 'confirmed' %}
         <span class="badge bg-success">Confirmed</span>
     {% elif contract.status == 'cancelled' %}

@@ -837,6 +837,21 @@ def chat(chat_id):
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
 
 
+            chat_ref.collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato aceptado",
+                "type": "status",
+                "status": "confirmed",
+                "timestamp": datetime.utcnow()
+            })
+            chat_ref.collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato cancelado",
+                "type": "status",
+                "status": "cancelled",
+                "timestamp": datetime.utcnow()
+            })
+        data["is_system"] = data.get("sender_id") == "system"
     # Retrieve related service and drone details for context in the chat
     service = {}
     drone = {}
