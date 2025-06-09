@@ -836,7 +836,6 @@ def chat(chat_id):
     contract_snapshot = contract_ref.get()
     contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
 
-
     # Retrieve related service and drone details for context in the chat
     service = {}
     drone = {}
@@ -847,14 +846,28 @@ def chat(chat_id):
             drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
             drone = drone_doc.to_dict() if drone_doc.exists else {}
 
-
     if request.method == "POST":
         action = request.form.get("action")
         if action == "accept" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
             contract_ref.update({"status": "confirmed"})
+            chat_ref.collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato aceptado",
+                "type": "status",
+                "status": "confirmed",
+                "timestamp": datetime.utcnow()
+            })
             flash("Contract approved.", "success")
         elif action == "reject" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
             contract_ref.update({"status": "cancelled"})
+            chat_ref.collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato cancelado",
+                "type": "status",
+                "status": "cancelled",
+                "timestamp": datetime.utcnow()
+            })
+
             flash("Contract rejected.", "warning")
         else:
             message = request.form.get("message", "").strip()
@@ -876,6 +889,7 @@ def chat(chat_id):
             data["date_str"] = local_ts.strftime("%Y-%m-%d")
             data["time_str"] = local_ts.strftime("%H:%M")
         data["is_me"] = data.get("sender_id") == session["user_id"]
+        data["is_system"] = data.get("sender_id") == "system"
         messages.append(data)
 
 
