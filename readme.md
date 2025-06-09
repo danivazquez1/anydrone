@@ -41,3 +41,4 @@ VALUES (1, 'Savannah Scout', 'AirTrack', 'HD', 1.0, 20, -1.2921, 36.8219);
 -- Sydney, Australia
 INSERT INTO drones (owner_id, model, manufacturer, camera_quality, max_load, flight_time, latitude, longitude)
 VALUES (1, 'Outback Flyer', 'AussieDrones', '4K', 2.3, 33, -33.8688, 151.2093);
+\n-When a service is requested a chat is automatically opened between the client and the drone owner. The owner can accept or reject the contract directly from the chat. All contract details are displayed within the chat so both parties have context.
