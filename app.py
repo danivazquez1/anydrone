@@ -892,7 +892,6 @@ def open_chat(contract_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for("dashboard"))
 
-
     chats = list(db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream())
     if chats:
         chat_id = chats[0].id
@@ -906,6 +905,7 @@ def open_chat(contract_id):
             "last_read_client": None
         })
         chat_id = chat_ref[1].id
+
 
     return redirect(url_for("chat", chat_id=chat_id))
 
