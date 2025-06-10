@@ -3,6 +3,7 @@
 {% block content %}
 <h2 class="text-center">Login</h2>
 <form method="POST" class="p-4 border rounded bg-light text-dark">
+
             <div class="mb-3">
                 <label>Email</label>
                 <input type="email" name="email" class="form-control" required>
@@ -15,3 +16,4 @@
 </form>
 <p class="text-center mt-3">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
 {% endblock %}
+
