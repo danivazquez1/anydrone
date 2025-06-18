@@ -10,7 +10,7 @@
 
 <div class="row align-items-center mb-5">
     <div class="col-md-6">
-        <img src="https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?auto=format&fit=crop&w=800&q=60" class="img-fluid rounded shadow" alt="Drone in flight">
+        <img src="{{ url_for('static', filename='images/dron_reparto.jpeg') }}" class="img-fluid rounded shadow" alt="Delivery drone">
 
     </div>
     <div class="col-md-6">
@@ -34,15 +34,21 @@
     </div>
 </div>
 
-<div class="row text-center my-5">
-    <div class="col-md-4 mb-4">
-        <img src="https://images.unsplash.com/photo-1556761175-129418cb2dfe?auto=format&fit=crop&w=600&q=60" class="img-fluid rounded shadow-sm" alt="Drone inspecting tower">
+<div class="row text-center my-5 gallery">
+    <div class="col mb-4">
+        <img src="{{ url_for('static', filename='images/dron_fuego.jpeg') }}" class="img-fluid rounded shadow-sm" alt="Drone apagando fuego">
     </div>
-    <div class="col-md-4 mb-4">
-        <img src="https://images.unsplash.com/photo-1508614999368-9260051291ea?auto=format&fit=crop&w=600&q=60" class="img-fluid rounded shadow-sm" alt="Drone delivering package">
+    <div class="col mb-4">
+        <img src="{{ url_for('static', filename='images/dron_limpia.jpeg') }}" class="img-fluid rounded shadow-sm" alt="Drone de limpieza">
     </div>
-    <div class="col-md-4 mb-4">
-        <img src="https://images.unsplash.com/photo-1506956191993-eab1e19447f4?auto=format&fit=crop&w=600&q=60" class="img-fluid rounded shadow-sm" alt="Drone surveying fields">
+    <div class="col mb-4">
+        <img src="{{ url_for('static', filename='images/dron_fumigador.jpeg') }}" class="img-fluid rounded shadow-sm" alt="Drone fumigador">
+    </div>
+    <div class="col mb-4">
+        <img src="{{ url_for('static', filename='images/dron_botiquin.jpeg') }}" class="img-fluid rounded shadow-sm" alt="Drone botiquín">
+    </div>
+    <div class="col mb-4">
+        <img src="{{ url_for('static', filename='images/dron_reparto.jpeg') }}" class="img-fluid rounded shadow-sm" alt="Drone de reparto">
     </div>
 </div>
 
