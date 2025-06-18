@@ -11,6 +11,7 @@
 <tbody>
 {% for c in chats %}
 <tr{% if c.unread %} class="table-info"{% endif %}>
+
 <td>{{ c.service_name }}</td>
 <td>{{ c.owner_name }}</td>
 <td>{{ c.client_name }}</td>
@@ -23,6 +24,7 @@
         {% endif %}
     </a>
 </td>
+
 </tr>
 {% endfor %}
 </tbody>

@@ -302,6 +302,7 @@ def contract_service(service_id):
             "timestamp": datetime.utcnow()
         })
 
+
         flash("Service requested. You can chat with the owner now.", "success")
         return redirect(url_for("chat", chat_id=chat_id))
 
@@ -876,6 +877,7 @@ def open_chat(contract_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+
     contract_doc = db.collection("contracts").document(contract_id).get()
     if not contract_doc.exists:
         flash("Contract not found.", "danger")
@@ -907,6 +909,7 @@ def open_chat(contract_id):
         chat_id = chat_ref[1].id
 
     return redirect(url_for("chat", chat_id=chat_id))
+
 
 @app.route("/chat/<chat_id>", methods=["GET", "POST"])
 def chat(chat_id):
@@ -944,6 +947,7 @@ def chat(chat_id):
             drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
             drone = drone_doc.to_dict() if drone_doc.exists else {}
 
+
     if request.method == "POST":
         action = request.form.get("action")
         if action == "accept" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
@@ -965,6 +969,7 @@ def chat(chat_id):
                 "status": "cancelled",
                 "timestamp": datetime.utcnow()
             })
+
             flash("Contract rejected.", "warning")
         else:
             message = request.form.get("message", "").strip()
@@ -988,6 +993,7 @@ def chat(chat_id):
         data["is_me"] = data.get("sender_id") == session["user_id"]
         data["is_system"] = data.get("sender_id") == "system"
         messages.append(data)
+
 
     owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
     client_doc = db.collection("users").document(chat_data["client_id"]).get()

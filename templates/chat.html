@@ -2,6 +2,7 @@
 {% block title %}Chat{% endblock %}
 {% block content %}
 <h2>Chat</h2>
+
 <div class="card mb-3">
     <div class="card-body">
         <h5 class="card-title">Contract Details</h5>
@@ -21,6 +22,7 @@
         </ul>
     </div>
 </div>
+
 <div class="mb-3">
     <strong>Status:</strong>
     {% if contract.status == 'pending' %}
@@ -64,6 +66,7 @@
                 <small class="text-muted">{{ m.time_str }}</small>
             </div>
         {% endif %}
+
     {% endfor %}
 </div>
 <form method="POST" class="input-group">
@@ -89,3 +92,4 @@
     });
 </script>
 {% endblock %}
+
