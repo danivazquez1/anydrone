@@ -189,3 +189,11 @@ input[type="datetime-local"] {
 iframe {
     max-width: 100%;
 }
+
+/* Gallery */
+.gallery img {
+    object-fit: cover;
+    height: 200px;
+    width: 100%;
+}
+

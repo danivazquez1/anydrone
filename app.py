@@ -18,6 +18,9 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
+# Optional YouTube video for the landing page
+YOUTUBE_VIDEO_ID = os.environ.get("YOUTUBE_VIDEO_ID", "21bFvPk7Ddk")
+
 # --- Firebase Init ---
 firebase_json = os.environ.get("FIREBASE_KEY")
 firebase_dict = json.loads(firebase_json)
@@ -82,7 +85,7 @@ def update_realtime_db(path, data):
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("index.html", youtube_video_id=YOUTUBE_VIDEO_ID)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -831,7 +834,6 @@ def my_chats():
     user_id = session["user_id"]
     for field in ("client_id", "owner_id"):
         docs = db.collection("chats").where(field, "==", user_id).stream()
-
         for d in docs:
             if d.id in seen:
                 continue
@@ -854,7 +856,6 @@ def my_chats():
                 msg_check = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
                 has_unread = any(True for _ in msg_check)
 
-
             chats.append({
                 "chat_id": d.id,
                 "service_name": service.get("service_name", "Service"),
@@ -875,6 +876,7 @@ def my_chats():
 def open_chat(contract_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
+
 
     contract_doc = db.collection("contracts").document(contract_id).get()
     if not contract_doc.exists:
@@ -905,7 +907,6 @@ def open_chat(contract_id):
             "last_read_client": None
         })
         chat_id = chat_ref[1].id
-
 
     return redirect(url_for("chat", chat_id=chat_id))
 
