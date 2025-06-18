@@ -178,3 +178,21 @@ input[type="datetime-local"] {
         padding-right: 1rem;
     }
 }
+
+/* Landing Page */
+.hero {
+    background-image: url('https://images.unsplash.com/photo-1495567720989-cebdbdd97913?auto=format&fit=crop&w=1500&q=60');
+    background-size: cover;
+    background-position: center;
+}
+
+iframe {
+    max-width: 100%;
+}
+
+/* Gallery */
+.gallery img {
+    object-fit: cover;
+    height: 200px;
+    width: 100%;
+}

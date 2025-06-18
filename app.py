@@ -18,6 +18,9 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
+# Optional YouTube video for the landing page
+YOUTUBE_VIDEO_ID = os.environ.get("YOUTUBE_VIDEO_ID", "21bFvPk7Ddk")
+
 # --- Firebase Init ---
 firebase_json = os.environ.get("FIREBASE_KEY")
 firebase_dict = json.loads(firebase_json)
@@ -32,6 +35,30 @@ drone_cache = {
     "data": [],
     "last_updated": 0  # timestamp de la última actualización real
 }
+
+
+# Context processor to show unread message count in navigation
+@app.context_processor
+def inject_unread_chats():
+    if "user_id" not in session:
+        return {"unread_chats": 0}
+
+    user_id = session["user_id"]
+    count = 0
+    for field in ("client_id", "owner_id"):
+        docs = db.collection("chats").where(field, "==", user_id).stream()
+        for d in docs:
+            data = d.to_dict()
+            last_read_field = "last_read_owner" if user_id == data.get("owner_id") else "last_read_client"
+            last_read = data.get(last_read_field)
+            if last_read is None:
+                new_query = d.reference.collection("messages").limit(1).stream()
+            else:
+                new_query = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
+            if any(True for _ in new_query):
+                count += 1
+                break
+    return {"unread_chats": count}
 
 
 
@@ -58,7 +85,7 @@ def update_realtime_db(path, data):
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("index.html", youtube_video_id=YOUTUBE_VIDEO_ID)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -252,8 +279,31 @@ def contract_service(service_id):
         contract_id = contract_ref[1].id
         data["contract_id"] = contract_id
         update_realtime_db(f"contracts/{contract_id}", data)
-        flash("Service contracted successfully!", "success")
-        return redirect(url_for("all_drones"))
+
+        # create a chat between the client and the drone owner
+        service = db.collection("services").document(service_id).get().to_dict()
+        drone = db.collection("drones").document(service["drone_id"]).get().to_dict()
+        chat_ref = db.collection("chats").add({
+            "contract_id": contract_id,
+            "owner_id": drone.get("owner_id"),
+            "client_id": session["user_id"],
+            "created_at": datetime.utcnow(),
+            "last_read_owner": None,
+            "last_read_client": None
+        })
+        chat_id = chat_ref[1].id
+
+        # notify the owner about the request
+        db.collection("chats").document(chat_id).collection("messages").add({
+            "sender_id": "system",
+            "content": "Servicio solicitado",
+            "type": "status",
+            "status": "pending",
+            "timestamp": datetime.utcnow()
+        })
+
+        flash("Service requested. You can chat with the owner now.", "success")
+        return redirect(url_for("chat", chat_id=chat_id))
 
     service_doc = db.collection("services").document(service_id).get()
     service = service_doc.to_dict()
@@ -358,6 +408,18 @@ def approve_request(contract_id):
 
     if drone["owner_id"] == session["user_id"]:
         contract_ref.update({"status": "confirmed"})
+
+        chat_docs = db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream()
+        chat_id = next((d.id for d in chat_docs), None)
+        if chat_id:
+            db.collection("chats").document(chat_id).collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato aceptado",
+                "type": "status",
+                "status": "confirmed",
+                "timestamp": datetime.utcnow()
+            })
+
         flash("Contract approved successfully", "success")
     else:
         flash("Unauthorized action", "danger")
@@ -380,6 +442,18 @@ def reject_request(contract_id):
 
     if drone["owner_id"] == session["user_id"]:
         contract_ref.update({"status": "cancelled"})
+
+        chat_docs = db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream()
+        chat_id = next((d.id for d in chat_docs), None)
+        if chat_id:
+            db.collection("chats").document(chat_id).collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato cancelado",
+                "type": "status",
+                "status": "cancelled",
+                "timestamp": datetime.utcnow()
+            })
+
         flash("Contract rejected", "warning")
     else:
         flash("Unauthorized action", "danger")
@@ -732,13 +806,207 @@ def cancel_contract(contract_id):
 
     # ✅ actualizar estado
     contract_ref.update({"status": "cancelled"})
+
+    # send system message to chat
+    chat_docs = db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream()
+    chat_id = next((d.id for d in chat_docs), None)
+    if chat_id:
+        db.collection("chats").document(chat_id).collection("messages").add({
+            "sender_id": "system",
+            "content": "Contrato cancelado",
+            "type": "status",
+            "status": "cancelled",
+            "timestamp": datetime.utcnow()
+        })
+
     flash("Contract cancelled successfully.", "info")
     return redirect(url_for("my_contracts"))
 
 
+@app.route("/my_chats")
+def my_chats():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    seen = set()
+    chats = []
+    user_id = session["user_id"]
+    for field in ("client_id", "owner_id"):
+        docs = db.collection("chats").where(field, "==", user_id).stream()
+        for d in docs:
+            if d.id in seen:
+                continue
+            seen.add(d.id)
+            data = d.to_dict()
+            contract = db.collection("contracts").document(data["contract_id"]).get().to_dict() or {}
+            service = db.collection("services").document(contract.get("service_id", "")).get().to_dict() or {}
+            owner = db.collection("users").document(data["owner_id"]).get().to_dict() or {}
+            client = db.collection("users").document(data["client_id"]).get().to_dict() or {}
+
+            # Determine last read timestamp for the current user
+            last_read_field = "last_read_owner" if user_id == data.get("owner_id") else "last_read_client"
+            last_read = data.get(last_read_field)
+            has_unread = False
+            if last_read is None:
+                # User never opened chat, check if any message exists
+                msg_check = d.reference.collection("messages").limit(1).stream()
+                has_unread = any(True for _ in msg_check)
+            else:
+                msg_check = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
+                has_unread = any(True for _ in msg_check)
+
+            chats.append({
+                "chat_id": d.id,
+                "service_name": service.get("service_name", "Service"),
+                "owner_name": owner.get("user_name", "Owner"),
+                "client_name": client.get("user_name", "Client"),
+                "status": contract.get("status", "pending"),
+                "unread": has_unread
+            })
+
+    return render_template("my_chats.html", chats=chats)
 
 
 
+
+
+
+@app.route("/open_chat/<contract_id>")
+def open_chat(contract_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    contract_doc = db.collection("contracts").document(contract_id).get()
+    if not contract_doc.exists:
+        flash("Contract not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    contract = contract_doc.to_dict()
+    service = db.collection("services").document(contract["service_id"]).get().to_dict()
+    drone = db.collection("drones").document(service["drone_id"]).get().to_dict()
+
+    owner_id = drone.get("owner_id")
+    client_id = contract.get("user_id")
+
+    if session["user_id"] not in (owner_id, client_id):
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("dashboard"))
+
+    chats = list(db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream())
+    if chats:
+        chat_id = chats[0].id
+    else:
+        chat_ref = db.collection("chats").add({
+            "contract_id": contract_id,
+            "owner_id": owner_id,
+            "client_id": client_id,
+            "created_at": datetime.utcnow(),
+            "last_read_owner": None,
+            "last_read_client": None
+        })
+        chat_id = chat_ref[1].id
+
+    return redirect(url_for("chat", chat_id=chat_id))
+
+@app.route("/chat/<chat_id>", methods=["GET", "POST"])
+def chat(chat_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    chat_ref = db.collection("chats").document(chat_id)
+    chat_doc = chat_ref.get()
+    if not chat_doc.exists:
+        flash("Chat not found.", "danger")
+        return redirect(url_for("dashboard"))
+
+    chat_data = chat_doc.to_dict()
+    if session["user_id"] not in (chat_data.get("owner_id"), chat_data.get("client_id")):
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("dashboard"))
+
+    # Update last read timestamp for the current user
+    if session["user_id"] == chat_data.get("owner_id"):
+        chat_ref.update({"last_read_owner": datetime.utcnow()})
+    else:
+        chat_ref.update({"last_read_client": datetime.utcnow()})
+
+    contract_ref = db.collection("contracts").document(chat_data["contract_id"])
+    contract_snapshot = contract_ref.get()
+    contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
+
+    # Retrieve related service and drone details for context in the chat
+    service = {}
+    drone = {}
+    if contract:
+        service_doc = db.collection("services").document(contract.get("service_id", "")).get()
+        if service_doc.exists:
+            service = service_doc.to_dict()
+            drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
+            drone = drone_doc.to_dict() if drone_doc.exists else {}
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "accept" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
+            contract_ref.update({"status": "confirmed"})
+            chat_ref.collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato aceptado",
+                "type": "status",
+                "status": "confirmed",
+                "timestamp": datetime.utcnow()
+            })
+            flash("Contract approved.", "success")
+        elif action == "reject" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
+            contract_ref.update({"status": "cancelled"})
+            chat_ref.collection("messages").add({
+                "sender_id": "system",
+                "content": "Contrato cancelado",
+                "type": "status",
+                "status": "cancelled",
+                "timestamp": datetime.utcnow()
+            })
+            flash("Contract rejected.", "warning")
+        else:
+            message = request.form.get("message", "").strip()
+            if message:
+                chat_ref.collection("messages").add({
+                    "sender_id": session["user_id"],
+                    "content": message,
+                    "timestamp": datetime.utcnow()
+                })
+        return redirect(url_for("chat", chat_id=chat_id))
+
+    messages_query = chat_ref.collection("messages").order_by("timestamp").stream()
+    messages = []
+    for m in messages_query:
+        data = m.to_dict()
+        ts = data.get("timestamp")
+        if ts:
+            local_ts = ts.astimezone()
+            data["date_str"] = local_ts.strftime("%Y-%m-%d")
+            data["time_str"] = local_ts.strftime("%H:%M")
+        data["is_me"] = data.get("sender_id") == session["user_id"]
+        data["is_system"] = data.get("sender_id") == "system"
+        messages.append(data)
+
+    owner_doc = db.collection("users").document(chat_data["owner_id"]).get()
+    client_doc = db.collection("users").document(chat_data["client_id"]).get()
+    user_names = {
+        chat_data["owner_id"]: owner_doc.to_dict().get("user_name", "Owner") if owner_doc.exists else "Owner",
+        chat_data["client_id"]: client_doc.to_dict().get("user_name", "Client") if client_doc.exists else "Client"
+    }
+
+    return render_template(
+        "chat.html",
+        messages=messages,
+        chat_id=chat_id,
+        user_names=user_names,
+        contract=contract,
+        service=service,
+        drone=drone,
+        is_owner=session["user_id"] == chat_data.get("owner_id"),
+        user_id=session["user_id"]
+    )
 @app.route("/logout")
 def logout():
     session.clear()
