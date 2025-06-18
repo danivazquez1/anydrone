@@ -19,7 +19,8 @@ app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
 # Optional YouTube video for the landing page
-YOUTUBE_VIDEO_ID = os.environ.get("YOUTUBE_VIDEO_ID", "21bFvPk7Ddk")
+# Default to AnyDrone promotional video if not provided via environment
+YOUTUBE_VIDEO_ID = os.environ.get("YOUTUBE_VIDEO_ID", "uyYmYpCOeD8")
 
 # --- Firebase Init ---
 firebase_json = os.environ.get("FIREBASE_KEY")
