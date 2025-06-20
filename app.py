@@ -841,7 +841,10 @@ def my_chats():
             seen.add(d.id)
             data = d.to_dict()
             contract = db.collection("contracts").document(data["contract_id"]).get().to_dict() or {}
-            service = db.collection("services").document(contract.get("service_id", "")).get().to_dict() or {}
+            service = {}
+            service_id = contract.get("service_id")
+            if service_id:
+                service = db.collection("services").document(service_id).get().to_dict() or {}
             owner = db.collection("users").document(data["owner_id"]).get().to_dict() or {}
             client = db.collection("users").document(data["client_id"]).get().to_dict() or {}
 
@@ -885,8 +888,18 @@ def open_chat(contract_id):
         return redirect(url_for("dashboard"))
 
     contract = contract_doc.to_dict()
-    service = db.collection("services").document(contract["service_id"]).get().to_dict()
-    drone = db.collection("drones").document(service["drone_id"]).get().to_dict()
+    service = {}
+    drone = {}
+    service_id = contract.get("service_id")
+    if service_id:
+        service_doc = db.collection("services").document(service_id).get()
+        if service_doc.exists:
+            service = service_doc.to_dict()
+            drone_id = service.get("drone_id")
+            if drone_id:
+                drone_doc = db.collection("drones").document(drone_id).get()
+                if drone_doc.exists:
+                    drone = drone_doc.to_dict()
 
     owner_id = drone.get("owner_id")
     client_id = contract.get("user_id")
