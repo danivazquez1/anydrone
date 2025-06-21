@@ -331,7 +331,8 @@ def contract_service(service_id):
     return render_template("contract_service.html", service=service)
 
 
-@app.route("/service/<service_id>", methods=["GET", "POST"])
+@app.route("/service/<service_id>")
+
 def service_details(service_id):
     service_doc = db.collection("services").document(service_id).get()
     if not service_doc.exists:
@@ -342,27 +343,6 @@ def service_details(service_id):
     drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
     drone = drone_doc.to_dict() if drone_doc.exists else {}
 
-    if request.method == "POST":
-        if "user_id" not in session:
-            flash("Login required to leave a review.", "warning")
-            return redirect(url_for("login"))
-
-        rating = int(request.form.get("rating", 0))
-        comment = request.form.get("comment", "").strip()
-
-        if rating < 1 or rating > 5 or not comment:
-            flash("Invalid review data", "warning")
-        else:
-            db.collection("reviews").add({
-                "service_id": service_id,
-                "user_id": session["user_id"],
-                "rating": rating,
-                "comment": comment,
-                "created_at": datetime.utcnow()
-            })
-            flash("Review submitted", "success")
-
-        return redirect(url_for("service_details", service_id=service_id))
 
     review_docs = db.collection("reviews").where("service_id", "==", service_id).stream()
     reviews = []
