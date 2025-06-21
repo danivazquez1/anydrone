@@ -332,6 +332,7 @@ def contract_service(service_id):
 
 
 @app.route("/service/<service_id>")
+
 def service_details(service_id):
     service_doc = db.collection("services").document(service_id).get()
     if not service_doc.exists:
@@ -341,6 +342,7 @@ def service_details(service_id):
     service = service_doc.to_dict()
     drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
     drone = drone_doc.to_dict() if drone_doc.exists else {}
+
 
     review_docs = db.collection("reviews").where("service_id", "==", service_id).stream()
     reviews = []
