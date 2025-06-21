@@ -294,7 +294,8 @@ def contract_service(service_id):
             chat_ref.update({"contract_id": contract_id})
             chat_id = existing_chat.id
         else:
-            chat_ref = db.collection("chats").add({
+            chat_tuple = db.collection("chats").add({
+
                 "contract_id": contract_id,
                 "owner_id": drone.get("owner_id"),
                 "client_id": session["user_id"],
@@ -302,7 +303,9 @@ def contract_service(service_id):
                 "last_read_owner": None,
                 "last_read_client": None
             })
-            chat_id = chat_ref[1].id
+            chat_ref = chat_tuple[1]
+            chat_id = chat_ref.id
+
 
         # send contract details as a message
         chat_ref.collection("messages").add({
