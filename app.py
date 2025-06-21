@@ -281,24 +281,39 @@ def contract_service(service_id):
         data["contract_id"] = contract_id
         update_realtime_db(f"contracts/{contract_id}", data)
 
-        # create a chat between the client and the drone owner
         service = db.collection("services").document(service_id).get().to_dict()
         drone = db.collection("drones").document(service["drone_id"]).get().to_dict()
-        chat_ref = db.collection("chats").add({
-            "contract_id": contract_id,
-            "owner_id": drone.get("owner_id"),
-            "client_id": session["user_id"],
-            "created_at": datetime.utcnow(),
-            "last_read_owner": None,
-            "last_read_client": None
-        })
-        chat_id = chat_ref[1].id
 
-        # notify the owner about the request
-        db.collection("chats").document(chat_id).collection("messages").add({
+        # Reuse chat if it already exists between the two users
+        chat_query = db.collection("chats") \
+            .where("owner_id", "==", drone.get("owner_id")) \
+            .where("client_id", "==", session["user_id"]).limit(1).stream()
+        existing_chat = next(chat_query, None)
+        if existing_chat:
+            chat_ref = db.collection("chats").document(existing_chat.id)
+            chat_ref.update({"contract_id": contract_id})
+            chat_id = existing_chat.id
+        else:
+            chat_ref = db.collection("chats").add({
+                "contract_id": contract_id,
+                "owner_id": drone.get("owner_id"),
+                "client_id": session["user_id"],
+                "created_at": datetime.utcnow(),
+                "last_read_owner": None,
+                "last_read_client": None
+            })
+            chat_id = chat_ref[1].id
+
+        # send contract details as a message
+        chat_ref.collection("messages").add({
             "sender_id": "system",
-            "content": "Servicio solicitado",
-            "type": "status",
+            "type": "contract",
+            "contract_id": contract_id,
+            "service_name": service.get("service_name"),
+            "price": service.get("price"),
+            "start_time": data["start_time"],
+            "duration_hours": data["duration_hours"],
+            "notes": data["notes"],
             "status": "pending",
             "timestamp": datetime.utcnow()
         })
@@ -967,9 +982,10 @@ def open_chat(contract_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for("dashboard"))
 
-    chats = list(db.collection("chats").where("contract_id", "==", contract_id).limit(1).stream())
-    if chats:
-        chat_id = chats[0].id
+    chat_query = db.collection("chats").where("owner_id", "==", owner_id).where("client_id", "==", client_id).limit(1).stream()
+    chat_doc = next(chat_query, None)
+    if chat_doc:
+        chat_id = chat_doc.id
     else:
         chat_ref = db.collection("chats").add({
             "contract_id": contract_id,
@@ -1006,44 +1022,46 @@ def chat(chat_id):
     else:
         chat_ref.update({"last_read_client": datetime.utcnow()})
 
-    contract_ref = db.collection("contracts").document(chat_data["contract_id"])
-    contract_snapshot = contract_ref.get()
-    contract = contract_snapshot.to_dict() if contract_snapshot.exists else {}
-
-    # Retrieve related service and drone details for context in the chat
-    service = {}
-    drone = {}
-    if contract:
-        service_doc = db.collection("services").document(contract.get("service_id", "")).get()
-        if service_doc.exists:
-            service = service_doc.to_dict()
-            drone_doc = db.collection("drones").document(service.get("drone_id", "")).get()
-            drone = drone_doc.to_dict() if drone_doc.exists else {}
-
-
     if request.method == "POST":
         action = request.form.get("action")
-        if action == "accept" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
-            contract_ref.update({"status": "confirmed"})
-            chat_ref.collection("messages").add({
-                "sender_id": "system",
-                "content": "Contrato aceptado",
-                "type": "status",
-                "status": "confirmed",
-                "timestamp": datetime.utcnow()
-            })
-            flash("Contract approved.", "success")
-        elif action == "reject" and session["user_id"] == chat_data.get("owner_id") and contract.get("status") == "pending":
-            contract_ref.update({"status": "cancelled"})
-            chat_ref.collection("messages").add({
-                "sender_id": "system",
-                "content": "Contrato cancelado",
-                "type": "status",
-                "status": "cancelled",
-                "timestamp": datetime.utcnow()
-            })
-
-            flash("Contract rejected.", "warning")
+        if action in ("accept", "reject"):
+            contract_id = request.form.get("contract_id")
+            if contract_id and session["user_id"] == chat_data.get("owner_id"):
+                c_ref = db.collection("contracts").document(contract_id)
+                c_snap = c_ref.get()
+                c_data = c_snap.to_dict() if c_snap.exists else None
+                if c_data and c_data.get("status") == "pending":
+                    new_status = "confirmed" if action == "accept" else "cancelled"
+                    c_ref.update({"status": new_status})
+                    chat_ref.collection("messages").add({
+                        "sender_id": "system",
+                        "content": "Contrato aceptado" if action == "accept" else "Contrato cancelado",
+                        "type": "status",
+                        "status": new_status,
+                        "timestamp": datetime.utcnow()
+                    })
+                    flash("Contract approved." if action == "accept" else "Contract rejected.", "success" if action == "accept" else "warning")
+        elif action == "review":
+            contract_id = request.form.get("contract_id")
+            rating = int(request.form.get("rating", 0))
+            comment = request.form.get("comment", "").strip()
+            if contract_id and 1 <= rating <= 5 and comment:
+                c_doc = db.collection("contracts").document(contract_id).get()
+                c_data = c_doc.to_dict() if c_doc.exists else None
+                if c_data and session["user_id"] == c_data.get("user_id"):
+                    db.collection("reviews").add({
+                        "service_id": c_data.get("service_id"),
+                        "contract_id": contract_id,
+                        "user_id": session["user_id"],
+                        "rating": rating,
+                        "comment": comment,
+                        "created_at": datetime.utcnow()
+                    })
+                    flash("Review submitted", "success")
+                else:
+                    flash("Invalid review", "warning")
+            else:
+                flash("Invalid review data", "warning")
         else:
             message = request.form.get("message", "").strip()
             if message:
@@ -1065,6 +1083,16 @@ def chat(chat_id):
             data["time_str"] = local_ts.strftime("%H:%M")
         data["is_me"] = data.get("sender_id") == session["user_id"]
         data["is_system"] = data.get("sender_id") == "system"
+        if data.get("type") == "contract":
+            c_doc = db.collection("contracts").document(data.get("contract_id", "")).get()
+            if c_doc.exists:
+                c_data = c_doc.to_dict()
+                data["contract_status"] = c_data.get("status")
+                if session["user_id"] == chat_data.get("client_id") and c_data.get("status") == "confirmed":
+                    existing = list(db.collection("reviews")
+                                    .where("contract_id", "==", data.get("contract_id"))
+                                    .where("user_id", "==", session["user_id"]).limit(1).stream())
+                    data["can_review"] = not existing
         messages.append(data)
 
 
@@ -1080,9 +1108,6 @@ def chat(chat_id):
         messages=messages,
         chat_id=chat_id,
         user_names=user_names,
-        contract=contract,
-        service=service,
-        drone=drone,
         is_owner=session["user_id"] == chat_data.get("owner_id"),
         user_id=session["user_id"]
     )
