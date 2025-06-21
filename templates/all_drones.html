@@ -38,8 +38,8 @@
                         <ul class="list-unstyled">
                             {% for service in drone["services"] %}
                                 <li class="mb-2">
-                                    <b>{{ service["name"] }}</b><br>
-                                    {{ service["description"] or "No description" }}<br>
+                                    <b><a href="{{ url_for('service_details', service_id=service['service_id']) }}">{{ service.get('service_name') or service.get('name') }}</a></b><br>
+                                    {{ service.get('service_description') or service.get('description') or "No description" }}<br>
                                     <span class="badge {{ 'bg-success' if service["is_available"] else 'bg-secondary' }}">
                                         {{ 'Available' if service["is_available"] else 'Unavailable' }}
                                     </span>
