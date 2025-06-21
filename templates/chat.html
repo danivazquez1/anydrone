@@ -3,52 +3,64 @@
 {% block content %}
 <h2>Chat</h2>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">Contract Details</h5>
-        <ul class="list-unstyled mb-0">
-            <li><strong>Service:</strong> {{ service.service_name }}</li>
-            <li><strong>Drone:</strong> {{ drone.model }} ({{ drone.manufacturer }})</li>
-            <li><strong>Price:</strong> €{{ service.price }}/h</li>
-            <li><strong>Start:</strong>
-                {% if contract.start_time %}
-                    <span class="contract-start-time" data-utc="{{ contract.start_time }}">{{ contract.start_time }}</span>
-                {% else %}
-                    <em>No time set</em>
-                {% endif %}
-            </li>
-            <li><strong>Duration:</strong> {{ contract.duration_hours }} h</li>
-            <li><strong>Notes:</strong> {{ contract.notes or '' }}</li>
-        </ul>
-    </div>
-</div>
-
-<div class="mb-3">
-    <strong>Status:</strong>
-    {% if contract.status == 'pending' %}
-        <span class="badge bg-warning text-dark">Pending</span>
-    {% elif contract.status == 'confirmed' %}
-        <span class="badge bg-success">Confirmed</span>
-    {% elif contract.status == 'cancelled' %}
-        <span class="badge bg-danger">Cancelled</span>
-    {% endif %}
-    {% if is_owner and contract.status == 'pending' %}
-        <form method="POST" class="d-inline">
-            <input type="hidden" name="action" value="accept">
-            <button class="btn btn-sm btn-success">Accept</button>
-        </form>
-        <form method="POST" class="d-inline ms-2">
-            <input type="hidden" name="action" value="reject">
-            <button class="btn btn-sm btn-danger">Reject</button>
-        </form>
-    {% endif %}
-</div>
 <div class="mb-4 border p-3 bg-white" style="max-height:400px; overflow-y:auto;">
     {% for m in messages %}
         {% if loop.first or m.date_str != loop.previtem.date_str %}
             <div class="text-center text-muted my-2">{{ m.date_str }}</div>
         {% endif %}
-        {% if m.is_system %}
+        {% if m.type == 'contract' %}
+            <div class="border p-2 my-2">
+                <div><strong>Service:</strong> {{ m.service_name }}</div>
+                <div><strong>Price:</strong> €{{ m.price }}/h</div>
+                <div><strong>Start:</strong>
+                    {% if m.start_time %}
+                        <span class="contract-start-time" data-utc="{{ m.start_time }}">{{ m.start_time }}</span>
+                    {% else %}
+                        <em>No time set</em>
+                    {% endif %}
+                </div>
+                <div><strong>Duration:</strong> {{ m.duration_hours }} h</div>
+                <div><strong>Notes:</strong> {{ m.notes or '' }}</div>
+                <div class="mt-2">
+                    <strong>Status:</strong>
+                    {% if m.contract_status == 'pending' %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif m.contract_status == 'confirmed' %}
+                        <span class="badge bg-success">Confirmed</span>
+                    {% elif m.contract_status == 'cancelled' %}
+                        <span class="badge bg-danger">Cancelled</span>
+                    {% endif %}
+                    {% if is_owner and m.contract_status == 'pending' %}
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="action" value="accept">
+                            <input type="hidden" name="contract_id" value="{{ m.contract_id }}">
+                            <button class="btn btn-sm btn-success">Accept</button>
+                        </form>
+                        <form method="POST" class="d-inline ms-2">
+                            <input type="hidden" name="action" value="reject">
+                            <input type="hidden" name="contract_id" value="{{ m.contract_id }}">
+                            <button class="btn btn-sm btn-danger">Reject</button>
+                        </form>
+                    {% endif %}
+                </div>
+                {% if m.contract_status == 'confirmed' and m.can_review %}
+                    <form method="POST" class="mt-2">
+                        <input type="hidden" name="action" value="review">
+                        <input type="hidden" name="contract_id" value="{{ m.contract_id }}">
+                        <div class="input-group">
+                            <select name="rating" class="form-select" required>
+                                {% for i in range(1,6) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="comment" class="form-control" placeholder="Leave a comment" required>
+                            <button class="btn btn-primary" type="submit">Review</button>
+                        </div>
+                    </form>
+                {% endif %}
+                <small class="text-muted d-block">{{ m.time_str }}</small>
+            </div>
+        {% elif m.is_system %}
             <div class="text-center my-2">
                 {% if m.status == 'confirmed' %}
                     <span class="text-success fw-bold">{{ m.content }}</span>
