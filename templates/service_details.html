@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Service Details{% endblock %}
+
+{% block content %}
+<h2>{{ service.get('service_name') or service.get('name') }}</h2>
+<p>{{ service.get('service_description') or service.get('description') }}</p>
+<p><strong>Price:</strong> {{ service.get('price') }} €/hour</p>
+<p><strong>Drone:</strong> {{ drone.get('model','') }} ({{ drone.get('manufacturer','') }})</p>
+
+{% if avg_rating %}
+<p><strong>Average Rating:</strong> {{ avg_rating }}/5</p>
+{% endif %}
+
+<h4 class="mt-4">Reviews</h4>
+{% if reviews %}
+    {% for r in reviews %}
+        <div class="border p-2 mb-2">
+            <strong>{{ r.user_name }}</strong>
+            <span class="badge bg-secondary ms-2">{{ r.rating }}/5</span><br>
+            {{ r.comment }}
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No reviews yet.</p>
+{% endif %}
+
+{% endblock %}
