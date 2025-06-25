@@ -62,6 +62,29 @@ def inject_unread_chats():
     return {"unread_chats": count}
 
 
+@app.route("/unread_count")
+def unread_count():
+    if "user_id" not in session:
+        return jsonify({"count": 0})
+
+    user_id = session["user_id"]
+    count = 0
+    for field in ("client_id", "owner_id"):
+        docs = db.collection("chats").where(field, "==", user_id).stream()
+        for d in docs:
+            data = d.to_dict()
+            last_read_field = "last_read_owner" if user_id == data.get("owner_id") else "last_read_client"
+            last_read = data.get(last_read_field)
+            if last_read is None:
+                new_query = d.reference.collection("messages").limit(1).stream()
+            else:
+                new_query = d.reference.collection("messages").where("timestamp", ">", last_read).limit(1).stream()
+            if any(True for _ in new_query):
+                count += 1
+                break
+    return jsonify({"count": count})
+
+
 
 # --- Utils ---
 def haversine(lat1, lon1, lat2, lon2):
