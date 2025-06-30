@@ -186,9 +186,9 @@ input[type="datetime-local"] {
     background-position: center;
 }
 
-/* Smaller hero image */
+/* Hero logo size */
 .hero-logo {
-    max-width: 300px;
+    max-width: 500px;
 }
 
 iframe {
